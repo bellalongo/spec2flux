@@ -5,9 +5,9 @@ Given a fits spectra file of grating E140M or G140L, the script will find the em
 
 ### Running the project:
 Make sure the .fits file is in the same directory. <br />
-Run by: **python ./main.py 'path to fits file' 'grating' 'name of star'** <br />
+Run by: **_python ./main.py 'path to fits file' 'grating' 'name of star'_** <br />
 So for the current example, you would run with: <br />
-**python .\main.py .\spectra\hlsp_muscles_hst_stis_tau_ceti_e140m_v1_component-spec.fits 'e140m' 'tau ceti'** <br />
+**_python .\main.py .\spectra\hlsp_muscles_hst_stis_tau_ceti_e140m_v1_component-spec.fits 'e140m' 'tau ceti'_** <br />
 
 ### Determining noise:
 For each emission line, a plot will appear, and you will have to click 'y' for noise and 'n' for not noise.

@@ -16,10 +16,10 @@ from flux_calc import *
 from emission_lines import *
 
 
-# UPDATE INFO FOR EACH SPECTRA
-filename = 'spectra/hlsp_muscles_hst_stis_tau_ceti_e140m_v1_component-spec.fits'  # PUT FILENAME HERE (make sure is in same directory)
-grating = "e140m" # PUT GRATING HERE
-star_name = "tau ceti" # PUT NAME OF STAR HERE
+# Pull spectra information
+filename = sys.argv[1]
+grating = sys.argv[2]
+star_name = sys.argv[3]
 date = str(date.today())
 
 # Fetch data

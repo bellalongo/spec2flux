@@ -1,9 +1,9 @@
 # Emission-Line-Flux-Calc 
 
-### Project description:
+### Description:
 Given a fits spectra file of grating E140M or G140L, the script will find the emission lines and calculate the flux for each emission line. The data is outputted as a .fits file, which can be used for analysis. 
 
-### Running the project:
+### How to run:
 Make sure the .fits file is in the same directory. <br />
 Run with: **_python ./main.py 'path to fits file' 'grating' 'name of star'_** <br />
 So for the current example, you would run with: <br />

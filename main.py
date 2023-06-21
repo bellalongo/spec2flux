@@ -38,7 +38,7 @@ else:
     sys.exit("Invalid grating")
 
 # Load Rest Lam data
-data = pd.read_csv("../DEM_goodlinelist .csv")
+data = pd.read_csv("DEM_goodlinelist.csv")
 rest_lam_data = pd.DataFrame(data)
 
 # Find the average width of the peaks

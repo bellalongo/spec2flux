@@ -15,5 +15,5 @@ A plot will appear of each emission line before the flux is calculated, and you 
 ### Using the data:
 Fits Header: The header of the fits file contains all of the necessary information used to calculate the flux. <br />
 Fits Data: Contains the emission line's wavelength, flux, error, and a boolean value representing if the emission line was blended. <br />
-Note: Noise is marked as having the inverse of the upper limit (3*error) as the flux and an error of 0. <br />
+Note: Noise is marked as having the negative of the upper limit (3*error) as the flux and an error of 0. <br />
 

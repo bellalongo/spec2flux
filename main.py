@@ -2,16 +2,15 @@
 import astropy.io.fits as fits
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from scipy.signal import find_peaks, peak_widths
+from scipy.signal import find_peaks
 import astropy.units as u
 import numpy as np
 import pandas as pd
-import math
 import sys
+from os.path import exists
 from datetime import date
 from collections import defaultdict
-from astropy.table import QTable, Table, Column
-from doppler_shift_calculator import *
+from astropy.table import Table
 from flux_calc import *
 from emission_lines import *
 
@@ -46,6 +45,12 @@ peak_width, peak_width_pixels, flux_range = peak_width_finder(grating, w[mask])
 
 # Find the doppler shift
 doppler_shift = doppler_shift_calc(rest_lam_data, w[mask][peaks], flux_range)
+
+# Check if noise file exists 
+noise_filename = "./noise/" + star_name + "_noise.txt"
+noise_found = exists(noise_filename)
+if noise_found:
+    noise_bool_list = np.loadtxt(noise_filename)
 
 # Initializing necessary variables
 flux = defaultdict(list)
@@ -95,22 +100,27 @@ for line in emission_lines_list:
     continuum = []
     continuum_array = split_create_trendline(w[line.flux_mask], f[line.flux_mask], line.blended_bool, peak_width_pixels)
 
-    # Create basic plot
-    fig = plt.figure(figsize=(14,7))
-    ax = fig.add_subplot()
-    fig.suptitle('Click "y" if noise, "n" if not', fontsize=14, fontweight='bold')
-    plt.title("Flux vs Wavelength for " + star_name)
-    plt.xlabel('Wavelength (\AA)')
-    plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ \AA$^{-1}$)')
-    plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ \AA$^{-1}$)')
-    trendline_patch = patches.Patch(color='darkorange', alpha=0.5, label='Flux Trendline')
+    if not noise_found:
+        # Create basic plot
+        fig = plt.figure(figsize=(14,7))
+        ax = fig.add_subplot()
+        fig.suptitle('Click "y" if noise, "n" if not', fontsize=14, fontweight='bold')
+        plt.title("Flux vs Wavelength for " + star_name)
+        plt.xlabel('Wavelength (\AA)')
+        plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ \AA$^{-1}$)')
+        plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ \AA$^{-1}$)')
+        trendline_patch = patches.Patch(color='darkorange', alpha=0.5, label='Flux Trendline')
+        rest_patch = patches.Patch(color='lightcoral', alpha=0.5, label='Rest Wavelength')
+        obs_patch = patches.Patch(color='darkred', alpha=0.5, label='Observable Wavelength')
 
-    # Plot emission lines
-    ax.plot(w[line.flux_mask], f[line.flux_mask], color="steelblue")
-    ax.plot(w[line.flux_mask], continuum_array, color="darkorange", alpha=0.7)
-    cid = fig.canvas.mpl_connect('key_press_event',on_key)
-    plt.legend(handles=[trendline_patch])
-    plt.show()
+        # Plot emission lines
+        ax.plot(w[line.flux_mask], f[line.flux_mask], color="steelblue")
+        ax.plot(w[line.flux_mask], continuum_array, color="darkorange", alpha=0.7)
+        plt.axvline(x = line.wavelength, color = 'lightcoral', label = 'Rest wavelenth')
+        plt.axvline(x = line.obs_lam.value, color = 'darkred', label = 'Rest wavelenth')
+        cid = fig.canvas.mpl_connect('key_press_event',on_key)
+        plt.legend(handles=[trendline_patch, rest_patch, obs_patch])
+        plt.show()
 
     # Calculate the flux and error
     w0,w1 = wavelength_edges(w[line.flux_mask])
@@ -135,6 +145,17 @@ for line in emission_lines_list:
     flux[rest_lam_data['Ion'][count]].append(("Wavelength: " + str(line.wavelength),"Flux: " + str(total_flux), "Error: " + str(sumerror),"Blended line: " + str(line.blended_bool)))
 
     count+=1 
+
+# Store noise booleans in a file
+if not noise_found:
+    noise_array = np.array(noise_bool_list)
+    np.savetxt(noise_filename, noise_array)
+
+# Printing
+for ion in flux:
+    print(f"Ion: {ion} ")
+    for data in flux[ion]:
+        print(data)
 
 # Plot the emission lines and trendlines
 plt.figure(figsize=(14,10))
@@ -169,7 +190,7 @@ plt.show()
 
 # Create a fits file
 data_array = []
-fits_filename = star_name.lower() + ".fits"
+fits_filename = "./flux/" + star_name.lower() + ".fits"
 
 for ion in flux:
     for data in flux[ion]:
@@ -194,9 +215,3 @@ with fits.open(fits_filename, mode='update') as hdul:
     hdr.set('WIDTHPXL', peak_width_pixels, 'peak_width in pixels used to measure flux')
     hdr.set('UPRLIMIT', 3*sumerror, 'upper limit used to determine noise')
     hdul.flush() 
-
-# Printing
-for ion in flux:
-    print(f"Ion: {ion} ")
-    for data in flux[ion]:
-        print(data)

@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import astropy.units as u
 
 """
     Creates "boxes" to be useed to measure the flux

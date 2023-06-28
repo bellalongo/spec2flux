@@ -26,12 +26,12 @@ grating = grating.upper()
 star_name = star_name.upper()
 data = fits.getdata(filename)
 w, f , e, dq = data['WAVELENGTH'], data['FLUX'], data['ERROR'], data['DQ']
-mask = (w > 1160) 
+mask = (w > 1160) # change if the spectra starts at a different wavelength
 
 # Find peaks
-if grating == "G140L":
+if 'L' in grating:
     peaks, properties = find_peaks(f[mask], height = 0.7*sum(f[mask])/len(f[mask]),  width = 0)
-elif grating == "E140M":
+elif 'M' in grating:
     peaks, properties  = find_peaks(f[mask], height = 10*sum(f[mask])/len(f[mask]), prominence = 10*sum(f[mask])/len(f[mask]), width = 0, threshold = (1/10)*sum(f[mask])/len(f[mask]))
 else:
     sys.exit("Invalid grating")
@@ -63,7 +63,7 @@ emission_lines_list = []
 
 # Find the emission lines
 for wavelength in rest_lam_data['Wavelength']:
-    if(wavelength > 1160):     
+    if(wavelength > 1160):  # change bounds if the spectra starts/ends at a different wavelength   
         # obs_lam calculation from doppler
         rest_lam = wavelength * u.AA
         obs_lam = doppler_shift.to(u.AA,  equivalencies=u.doppler_optical(rest_lam))

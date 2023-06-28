@@ -27,7 +27,7 @@ class emission_line:
 """
 def peak_width_finder(grating, wavelength_data):
     # Check grating
-    if grating == "G140L":
+    if 'L' in grating:
         peak_width = 3.5
     else:
         peak_width = 0.35

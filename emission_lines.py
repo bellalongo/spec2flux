@@ -61,11 +61,11 @@ def doppler_shift_calc(rest_lam_data, wavelength_data, flux_range):
     # Iterate through all of the rest wavelengths
     for wavelength in rest_lam_data["Wavelength"]:
         # Check if the current wavelength has a high liklihood to measure
-        if((wavelength > 1400) and rest_lam_data['Likelihood to measure'][count] == "High"):     
+        if((wavelength > 1300) and rest_lam_data['Likelihood to measure'][count] == "High"):     
             wavelength = wavelength*u.AA
             # See if there is a peak that is close to the current rest wavelength
             for peak in  wavelength_data:
-                if check_in_range(peak-1.75, peak+1.75, wavelength.value):
+                if check_in_range(peak - 0.5, peak + 0.5, wavelength.value):
                     # Calculate the doppler shift
                     u_rest_lam = wavelength
                     u_obs_lam = peak * u.AA
@@ -85,6 +85,7 @@ def doppler_shift_calc(rest_lam_data, wavelength_data, flux_range):
         count+=1
     
     doppler_shift = sum(dv)/len(dv)
+
     return doppler_shift
 
 

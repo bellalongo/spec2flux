@@ -5,9 +5,9 @@ Given a fits spectrum file, the script will find the emission lines and calculat
 
 ### How to run:
 Make sure the .fits file is in the same directory. <br />
-Run with: **_python ./main.py 'path to fits file' 'grating' 'name of star'_** <br />
+Run with: **_python ./main.py 'path to fits file' 'instrument' 'grating' 'name of star'_** <br />
 So for the current example, you would run with: <br />
-**_python .\main.py .\spectra\hlsp_muscles_hst_stis_tau_ceti_e140m_v1_component-spec.fits 'e140m' 'tau ceti'_** <br />
+**_python .\main.py .\spectra\hlsp_muscles_hst_stis_tau_ceti_e140m_v1_component-spec.fits 'sci' 'e140m' 'tau ceti'_** <br />
 
 ### Determining noise:
 A plot will appear of each emission line before the flux is calculated, and you will click 'y' on your keyboard for noise and 'n' for not noise.

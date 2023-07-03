@@ -17,9 +17,9 @@ from emission_lines import *
 
 # Pull spectra information
 filename = sys.argv[1]
-grating = sys.argv[2]
-star_name = sys.argv[3]
-instrument = sys.argv[4]
+instrument = sys.argv[2]
+grating = sys.argv[3]
+star_name = sys.argv[4]
 date = str(date.today())
 
 # Fetch data

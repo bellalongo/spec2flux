@@ -111,7 +111,7 @@ for line in emission_lines_list:
         plt.xlabel('Wavelength (\AA)')
         plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ \AA$^{-1}$)')
         plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ \AA$^{-1}$)')
-        trendline_patch = patches.Patch(color='darkorange', alpha=0.5, label='Flux Trendline')
+        trendline_patch = patches.Patch(color='darkorange', alpha=0.5, label='Continuum')
         rest_patch = patches.Patch(color='lightcoral', alpha=0.5, label='Rest Wavelength')
         obs_patch = patches.Patch(color='darkred', alpha=0.5, label='Observable Wavelength')
 

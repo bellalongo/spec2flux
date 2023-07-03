@@ -19,18 +19,20 @@ from emission_lines import *
 filename = sys.argv[1]
 grating = sys.argv[2]
 star_name = sys.argv[3]
+instrument = sys.argv[4]
 date = str(date.today())
 
 # Fetch data
 grating = grating.upper()
 star_name = star_name.upper()
+instrument = instrument.upper()
 data = fits.getdata(filename)
-w, f , e, dq = data['WAVELENGTH'], data['FLUX'], data['ERROR'], data['DQ']
+w, f , e = data['WAVELENGTH'], data['FLUX'], data['ERROR']
 mask = (w > 1160) # change if the spectra starts at a different wavelength
 
 # Find peaks
 if 'L' in grating:
-    peaks, properties = find_peaks(f[mask], height = 0.7*sum(f[mask])/len(f[mask]),  width = 0)
+    peaks, properties = find_peaks(f[mask], height = 0.7*sum(f[mask])/len(f[mask]), width = 0)
 elif 'M' in grating:
     peaks, properties  = find_peaks(f[mask], height = 10*sum(f[mask])/len(f[mask]), prominence = 10*sum(f[mask])/len(f[mask]), width = 0, threshold = (1/10)*sum(f[mask])/len(f[mask]))
 else:
@@ -191,6 +193,7 @@ plt.show()
 # Create a fits file
 data_array = []
 fits_filename = "./flux/" + star_name.lower() + ".fits"
+ecsv_filename = "./flux/" + star_name.lower() + ".ecsv"
 
 for ion in flux:
     for data in flux[ion]:
@@ -198,6 +201,7 @@ for ion in flux:
 
 t = Table(rows=data_array)
 t.write(fits_filename, overwrite=True) 
+t.write(ecsv_filename, overwrite = True) # does not have a header
 
 # Update header
 with fits.open(fits_filename, mode='update') as hdul:
@@ -206,12 +210,12 @@ with fits.open(fits_filename, mode='update') as hdul:
     hdr.set('FILENAME', filename, 'name of the fits file used to calculate the flux')
     hdr.set('FILETYPE', "SCI", 'file type of fits file')
     hdr.set('TELESCP', "HST", 'telescope used to measure flux')
-    hdr.set('INSTRMNT', "SCIS", 'active instrument to measure flux')
+    hdr.set('INSTRMNT', instrument, 'active instrument to measure flux')
     hdr.set('GRATING', grating, 'grating used to measure flux')
     hdr.set('TARGNAME', star_name, 'name of star used in measurement')
     hdr.set('DOPPLER', str(doppler_shift.value) + " km/s", 'doppler shift used to measure flux')
     hdr.set('WIDTH', "+/- " + str(peak_width) + " Angstroms", 'peak_width used to measure flux')
     hdr.set('RANGE', "+/- " + str(flux_range) + " Angstroms", 'flux range used to measure flux')
     hdr.set('WIDTHPXL', peak_width_pixels, 'peak_width in pixels used to measure flux')
-    hdr.set('UPRLIMIT', 3*sumerror, 'upper limit used to determine noise')
+    hdr.set('UPRLIMIT', "3*error", 'upper limit used to determine noise')
     hdul.flush() 

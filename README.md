@@ -10,7 +10,8 @@ So for the current example, you would run with: <br />
 **_python .\main.py .\spectra\hlsp_muscles_hst_stis_tau_ceti_e140m_v1_component-spec.fits 'sci' 'e140m' 'tau ceti'_** <br />
 
 ### Determining noise:
-A plot will appear of each emission line before the flux is calculated, and you will click 'y' on your keyboard for noise and 'n' for not noise.
+A plot will appear of each emission line before the flux is calculated, and you will click 'y' on your keyboard for noise and 'n' for not noise. </br>
+![alt text](https://github.com/bellalongo/Flux-and-Line-Measurement-Script/blob/main/not_noise_example.png?raw=true)
 
 ### Using the data:
 Fits Header: The header of the fits file contains all of the necessary information used to calculate the flux. <br />

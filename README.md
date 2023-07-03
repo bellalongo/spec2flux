@@ -11,7 +11,12 @@ So for the current example, you would run with: <br />
 
 ### Determining noise:
 A plot will appear of each emission line before the flux is calculated, and you will click 'y' on your keyboard for noise and 'n' for not noise. </br>
+</br>
+Not noise:
 ![Not noise example](https://github.com/bellalongo/Flux-and-Line-Measurement-Script/blob/main/not_noise_example.png?raw=true)
+</br>
+Noise:
+![Not noise example](https://github.com/bellalongo/Flux-and-Line-Measurement-Script/blob/main/noise_example.png?raw=true)
 
 ### Using the data:
 Fits Header: The header of the fits file contains all of the necessary information used to calculate the flux. <br />

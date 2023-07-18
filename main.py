@@ -64,8 +64,8 @@ prev_left_bound = 0
 emission_lines_list = []
 
 # Find the emission lines
-for wavelength in rest_lam_data['Wavelength']:
-    if(wavelength > 1160):  # change bounds if the spectra starts/ends at a different wavelength   
+for wavelength in rest_lam_data["Wavelength"]:
+    if(wavelength > 1160):  # change bounds if the spectra starts/ends at a different wavelength (and measure type)
         # obs_lam calculation from doppler
         rest_lam = wavelength * u.AA
         obs_lam = doppler_shift.to(u.AA,  equivalencies=u.doppler_optical(rest_lam))
@@ -96,6 +96,9 @@ for wavelength in rest_lam_data['Wavelength']:
         previous_index = len(flux[rest_lam_data['Ion'][count]]) - 1
         iterations+=1
 
+    count+=1
+
+count = 0
 # Determine if the current emission line is noise
 for line in emission_lines_list:
     # Find the continuum

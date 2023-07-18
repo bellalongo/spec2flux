@@ -1,7 +1,7 @@
 # Emission-Line-Flux-Calc 
 
 ### Description:
-Given a fits spectrum file, the script will find the emission lines and calculate the flux for each emission line. The data is outputted as a .fits file, which can be used for analysis. 
+Given a fits spectra file, the script will find the emission lines and calculate the flux for each emission line. The data is outputted as a .fits file, which can be used for analysis. 
 
 ### How to run:
 Make sure the .fits file is in the same directory. <br />

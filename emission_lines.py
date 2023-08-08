@@ -7,8 +7,9 @@ import math
 noise_bool_list = []
 
 class emission_line:
-    def __init__(self, wavelength, obs_lam, flux_mask, noise_bool, blended_bool):
+    def __init__(self, wavelength, ion, obs_lam, flux_mask, noise_bool, blended_bool):
         self.wavelength = wavelength
+        self.ion = ion
         self.obs_lam = obs_lam
         self.flux_mask = flux_mask
         self.noise_bool = noise_bool

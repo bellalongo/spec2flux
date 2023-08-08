@@ -87,9 +87,10 @@ for wavelength in rest_lam_data["Wavelength"]:
         else:
             wavelength_mask = (w > (obs_lam.value - flux_range)) & (w < (obs_lam.value + flux_range))
             prev_blended_bool = False
-        
+     
         # Append emission line
-        emission_lines_list.append(emission_line(wavelength, obs_lam, wavelength_mask, False, blended_line_bool))
+        ion = rest_lam_data['Ion'][count]
+        emission_lines_list.append(emission_line(wavelength, ion, obs_lam, wavelength_mask, False, blended_line_bool))
     
         # Update variables
         previous_obs = obs_lam
@@ -147,7 +148,7 @@ for line in emission_lines_list:
         sumerror = 0
 
     # Append to flux list
-    flux[rest_lam_data['Ion'][count]].append(("Wavelength: " + str(line.wavelength),"Flux: " + str(total_flux), "Error: " + str(sumerror),"Blended line: " + str(line.blended_bool)))
+    flux[line.ion].append(("Wavelength: " + str(line.wavelength),"Flux: " + str(total_flux), "Error: " + str(sumerror),"Blended line: " + str(line.blended_bool)))
 
     count+=1 
 

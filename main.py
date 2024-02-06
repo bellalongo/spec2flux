@@ -46,7 +46,7 @@ rest_lam_data = pd.DataFrame(data)
 peak_width, peak_width_pixels, flux_range = peak_width_finder(grating, w[mask])
 
 # Find the doppler shift
-doppler_shift = doppler_shift_calc(rest_lam_data, w[mask][peaks], flux_range)
+doppler_shift = doppler_shift_calc(rest_lam_data, w[mask], f[mask], flux_range, star_name)
 
 # Check if noise file exists 
 noise_filename = "./noise/" + star_name + "_noise.txt"
@@ -104,7 +104,7 @@ count = 0
 for line in emission_lines_list:
     # Find the continuum
     continuum = []
-    continuum_array = split_create_trendline(w[line.flux_mask], f[line.flux_mask], line.blended_bool, peak_width_pixels)
+    continuum_array = split_create_trendline(w[line.flux_mask], f[line.flux_mask], peak_width_pixels)
 
     if not noise_found:
         # Create basic plot
@@ -113,8 +113,8 @@ for line in emission_lines_list:
         fig.suptitle('Click "y" if noise, "n" if not', fontsize=14, fontweight='bold')
         plt.title("Flux vs Wavelength for " + star_name)
         plt.xlabel('Wavelength (\AA)')
-        plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ \AA$^{-1}$)')
-        plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ \AA$^{-1}$)')
+        plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ AA$^{-1}$)')
+        plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ AA$^{-1}$)')
         trendline_patch = patches.Patch(color='darkorange', alpha=0.5, label='Continuum')
         rest_patch = patches.Patch(color='lightcoral', alpha=0.5, label='Rest Wavelength')
         obs_patch = patches.Patch(color='darkred', alpha=0.5, label='Observable Wavelength')
@@ -122,8 +122,8 @@ for line in emission_lines_list:
         # Plot emission lines
         ax.plot(w[line.flux_mask], f[line.flux_mask], color="steelblue")
         ax.plot(w[line.flux_mask], continuum_array, color="darkorange", alpha=0.7)
-        plt.axvline(x = line.wavelength, color = 'lightcoral', label = 'Rest wavelenth')
-        plt.axvline(x = line.obs_lam.value, color = 'darkred', label = 'Rest wavelenth')
+        plt.axvline(x = line.wavelength, color = 'lightcoral', label = 'Rest wavelength')
+        plt.axvline(x = line.obs_lam.value, color = 'darkred', label = 'Observed wavelength')
         cid = fig.canvas.mpl_connect('key_press_event',on_key)
         plt.legend(handles=[trendline_patch, rest_patch, obs_patch])
         plt.show()
@@ -148,7 +148,7 @@ for line in emission_lines_list:
         sumerror = 0
 
     # Append to flux list
-    flux[line.ion].append(("Wavelength: " + str(line.wavelength),"Flux: " + str(total_flux), "Error: " + str(sumerror),"Blended line: " + str(line.blended_bool)))
+    flux[line.ion].append((line.wavelength, total_flux, sumerror, line.blended_bool))
 
     count+=1 
 
@@ -169,7 +169,7 @@ plt.plot(w[mask], f[mask], color="steelblue")
 count = 0
 
 for line in emission_lines_list:
-    continuum_array = split_create_trendline(w[line.flux_mask], f[line.flux_mask], line.blended_bool, peak_width_pixels)
+    continuum_array = split_create_trendline(w[line.flux_mask], f[line.flux_mask], peak_width_pixels)
 
     if line.noise_bool:
         line_color = 'darkgreen'

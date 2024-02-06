@@ -1,10 +1,14 @@
 import matplotlib.pyplot as plt
 from flux_calc import *
-import astropy.units as u
 import sys
 import math
+import matplotlib.patches as patches
+from scipy.optimize import curve_fit
+from scipy.stats import norm
+
 
 noise_bool_list = []
+doppler_bool_list = []
 
 class emission_line:
     def __init__(self, wavelength, ion, obs_lam, flux_mask, noise_bool, blended_bool):
@@ -52,42 +56,76 @@ def peak_width_finder(grating, wavelength_data):
     Returns:
                 doppler_shift: doppler shift of the spectra
 """
-def doppler_shift_calc(rest_lam_data, wavelength_data, flux_range):
-    # Initialize variables
-    count = 0
-    iterations = 0
-    dv = []
-    previous_wavelength = 0 *u.AA
+def doppler_shift_calc(rest_lam_data, wavelength_data, flux_data, flux_range, star_name):
+    # Get rows with high liklihood and best doppler candidates -> ONE PEAK
+    """
+        instead -> do a guassian fit and then get the peaks of it?
+        INSTEAD of find peaks!
+    """
+    high_liklihood_df = rest_lam_data[rest_lam_data["Likelihood to measure"] == "High"]
+    doppler_candidates = []
+    obs_candidates = []
+    doppler = []
 
-    # Iterate through all of the rest wavelengths
-    for wavelength in rest_lam_data["Wavelength"]:
-        # Check if the current wavelength has a high liklihood to measure
-        if((wavelength > 1300) and rest_lam_data['Likelihood to measure'][count] == "High"):     
-            wavelength = wavelength*u.AA
-            # See if there is a peak that is close to the current rest wavelength
-            for peak in  wavelength_data:
-                if check_in_range(peak - 0.5, peak + 0.5, wavelength.value):
-                    # Calculate the doppler shift
-                    u_rest_lam = wavelength
-                    u_obs_lam = peak * u.AA
-                    dv.append(u_obs_lam.to(u.km/u.s,  equivalencies=u.doppler_optical(u_rest_lam)))
+    for index, row in  high_liklihood_df.iterrows():
+        # Initalization
+        wavelength = row[1]
+        flux_range_mask = (wavelength_data > (wavelength - flux_range)) & (wavelength_data < (wavelength + flux_range))
 
-                    # Check for doublet
-                    blended_line_bool = blended_line_check(previous_wavelength, wavelength, iterations, flux_range)
-                    if blended_line_bool:
-                        # Combine the last two calculations
-                        dv_length = len(dv)
-                        dv[dv_length - 2] = (dv[dv_length - 2] + dv[dv_length - 1])/2
-                        del dv[dv_length-1]
+        # See if a gaussian fit can be made
+        try:
+            # Set up inital parameter guesses 
+            init_amp = np.max(flux_data[flux_range_mask])
+            init_params = [init_amp, np.mean(wavelength_data[flux_range_mask]), np.std(wavelength_data[flux_range_mask])]
 
-                    previous_wavelength = wavelength
-                    break
-            iterations+=1
-        count+=1
-    
-    doppler_shift = sum(dv)/len(dv)
+            # Gaussian fit
+            popt, _ = curve_fit(gaussian, wavelength_data[flux_range_mask], flux_data[flux_range_mask], p0=init_params)
+            amp, mu, sigma = popt
+        except RuntimeError:
+            continue
 
-    return doppler_shift
+        # Create basic plot
+        fig = plt.figure(figsize=(14,7))
+        ax = fig.add_subplot()
+        fig.suptitle('Click "y" if should be used for doppler calc, "n" if not (click "y" for both if doublets)')
+        plt.title("Flux vs Wavelength for " + star_name)
+        plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ AA$^{-1}$)')
+        plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ AA$^{-1}$)')
+        # change colors ! -> make into blues instead of reds or purples! 
+        rest_patch = patches.Patch(color='darkred', alpha=0.5, label='Rest Wavelength')
+        obs_patch = patches.Patch(color = 'lightcoral', alpha = 0.5, label = 'Observed Wavelength Candidates')
+
+        # Plot emission lines
+        print(f"Wavelength: {wavelength}")
+        ax.plot(wavelength_data[flux_range_mask], flux_data[flux_range_mask], color="steelblue")
+        plt.axvline(x = wavelength, color = 'lightcoral', label = 'Emission Line Candidate')
+        cid = fig.canvas.mpl_connect('key_press_event', lambda event: on_key(event, 'Doppler Calculation'))
+
+        # Plot the fitted Gaussian profile
+        x = np.linspace(np.min(wavelength_data[flux_range_mask]), np.max(wavelength_data[flux_range_mask]), 1000)
+        y = gaussian(x, amp, mu, sigma)
+        ax.plot(x, y, '-', color='red')
+
+        plt.legend(handles=[rest_patch, obs_patch])
+        plt.show()
+
+    sys.exit()
+
+
+
+"""
+    Gaussian fit function
+    Name:       gaussian()
+    Parameters: 
+                x: data that will be fit
+                amp: amplitude of the gaussian fit
+                mu: mean of the gaussian fit
+                sigma: standard deviation of gaussian fit
+    Returns:
+                None
+"""
+def gaussian(x, amp, mu, sigma):
+    return amp * norm.pdf(x, mu, sigma)
 
 
 """
@@ -98,15 +136,20 @@ def doppler_shift_calc(rest_lam_data, wavelength_data, flux_range):
     Returns:
                 None
 """
-def on_key(event):
-    if event.key == 'y':
-        noise_bool_list.append(True)
-        plt.close()
-    elif event.key == 'n':
-        noise_bool_list.append(False)
-        plt.close()
-    else:
-        sys.exit("Invalid key input")
+def on_key(event, purpose):
+    valid_keys = {'y', 'n'}
 
+    if purpose not in ["Noise Detection", "Doppler Calculation"]:
+        sys.exit("Invalid purpose, select 'Noise Detection' or 'Doppler Calculation'")
 
+    if event.key not in valid_keys:
+        sys.exit("Invalid key input, select 'y' or 'n'")
+
+    if purpose == "Noise Detection":
+        noise_bool_list.append(event.key == 'y')
+        plt.close()
+
+    elif purpose == "Doppler Calculation":
+        doppler_bool_list.append(event.key == 'y')
+        plt.close()
 

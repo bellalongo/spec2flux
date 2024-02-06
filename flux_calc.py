@@ -26,12 +26,11 @@ def wavelength_edges(wavelength_data):
     Parameters: 
                 wavelength_data: masked wavelength data from the spectra     
                 flux_data: masked flux data from the spectra
-                blended_line_bool: is the current peak blended or not
                 peak_width_pixels: peak width in pixels  
     Returns:
                 p(wavelength_array): continuum data for the current peak
 """
-def split_create_trendline(wavelength_data, flux_data, blended_line_bool, peak_width_pixels):
+def split_create_trendline(wavelength_data, flux_data, peak_width_pixels):
     # Initialize variables
     length = len(wavelength_data) - 1
     flux_list_left = []

@@ -45,8 +45,13 @@ rest_lam_data = pd.DataFrame(data)
 # Find the average width of the peaks
 peak_width, peak_width_pixels, flux_range = peak_width_finder(grating, w[mask])
 
-# Find the doppler shift
-doppler_shift = doppler_shift_calc(rest_lam_data, w[mask], f[mask], flux_range, star_name)
+# Check if doppler file exists
+doppler_filename = "./doppler/" + star_name + "_doppler.txt"
+doppler_found = exists(doppler_filename)
+if doppler_found:
+    doppler_shift = np.loadtxt(doppler_filename)*(u.km/u.s)
+else:
+    doppler_shift = doppler_shift_calc(rest_lam_data, w[mask], f[mask], flux_range, star_name, doppler_filename)
 
 # Check if noise file exists 
 noise_filename = "./noise/" + star_name + "_noise.txt"
@@ -124,7 +129,7 @@ for line in emission_lines_list:
         ax.plot(w[line.flux_mask], continuum_array, color="darkorange", alpha=0.7)
         plt.axvline(x = line.wavelength, color = 'lightcoral', label = 'Rest wavelength')
         plt.axvline(x = line.obs_lam.value, color = 'darkred', label = 'Observed wavelength')
-        cid = fig.canvas.mpl_connect('key_press_event',on_key)
+        cid = fig.canvas.mpl_connect('key_press_event', lambda event: on_key(event, 'Noise Detection'))
         plt.legend(handles=[trendline_patch, rest_patch, obs_patch])
         plt.show()
 

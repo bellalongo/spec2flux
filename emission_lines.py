@@ -6,19 +6,23 @@ import matplotlib.patches as patches
 from scipy.optimize import curve_fit
 from scipy.stats import norm
 import astropy.units as u
+from scipy.integrate import quad
 
 
 noise_bool_list = []
 doppler_bool_list = []
 
 class emission_line:
-    def __init__(self, wavelength, ion, obs_lam, flux_mask, noise_bool, blended_bool):
+    def __init__(self, wavelength, ion, obs_lam, flux_mask, noise_bool, blended_bool, gauss_amplitude=0, gauss_mean=0, gauss_std=0):
         self.wavelength = wavelength
         self.ion = ion
         self.obs_lam = obs_lam
         self.flux_mask = flux_mask
         self.noise_bool = noise_bool
         self.blended_bool = blended_bool
+        self.amp = gauss_amplitude
+        self.mu = gauss_mean
+        self.sigma = gauss_std
 
 
 """
@@ -137,6 +141,22 @@ def doppler_shift_calc(rest_lam_data, wavelength_data, flux_data, flux_range, st
 """
 def gaussian(x, amp, mu, sigma):
     return amp * norm.pdf(x, mu, sigma)
+
+
+"""
+    Calculate the integral of the Gaussian function over a specified range
+    Name: gaussian_integral()
+    Parameters:
+        amp: amplitude of the gaussian fit
+        mu: mean of the gaussian fit
+        sigma: standard deviation of the gaussian fit
+        x_min: 'a' value (lower value)
+        x_max: 'b' value (upper value)
+"""
+def gaussian_integral(amp, mu, sigma, x_min, x_max):
+    integrand = lambda x: amp * norm.pdf(x, mu, sigma)
+    return quad(integrand, x_min, x_max)[0]
+
 
 
 """

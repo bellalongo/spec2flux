@@ -13,6 +13,7 @@ from collections import defaultdict
 from astropy.table import Table
 from flux_calc import *
 from emission_lines import *
+import csv
 
 
 # Pull spectra information
@@ -104,14 +105,14 @@ for wavelength in rest_lam_data["Wavelength"]:
 
     count+=1
 
-count = 0
-# Determine if the current emission line is noise
-for line in emission_lines_list:
-    # Find the continuum
-    continuum = []
-    continuum_array = split_create_trendline(w[line.flux_mask], f[line.flux_mask], peak_width_pixels)
+if not noise_found:
+    count = 0
+    # Determine if the current emission line is noise
+    for line in emission_lines_list:
+        # Find the continuum
+        continuum = []
+        continuum_array = split_create_trendline(w[line.flux_mask], f[line.flux_mask], peak_width_pixels)
 
-    if not noise_found:
         # Create basic plot
         fig = plt.figure(figsize=(14,7))
         ax = fig.add_subplot()
@@ -124,6 +125,17 @@ for line in emission_lines_list:
         rest_patch = patches.Patch(color='lightcoral', alpha=0.5, label='Rest Wavelength')
         obs_patch = patches.Patch(color='darkred', alpha=0.5, label='Observable Wavelength')
 
+        # Calculate  Gaussian fit
+        init_amp = np.max(f[line.flux_mask])
+        init_params = [init_amp, np.mean(w[line.flux_mask]), np.std(w[line.flux_mask])]
+        popt, _ = curve_fit(gaussian, w[line.flux_mask], f[line.flux_mask], p0=init_params, maxfev = 10000)
+        line.amp, line.mu, line.sigma = popt
+
+        # Plot Gaussian fit
+        x = np.linspace(np.min(w[line.flux_mask]), np.max(w[line.flux_mask]), 1000)
+        y = gaussian(x, line.amp, line.mu, line.sigma)
+        ax.plot(x, y, '-', color='royalblue', linewidth=2.0)
+
         # Plot emission lines
         ax.plot(w[line.flux_mask], f[line.flux_mask], color="steelblue")
         ax.plot(w[line.flux_mask], continuum_array, color="darkorange", alpha=0.7)
@@ -132,41 +144,42 @@ for line in emission_lines_list:
         cid = fig.canvas.mpl_connect('key_press_event', lambda event: on_key(event, 'Noise Detection'))
         plt.legend(handles=[trendline_patch, rest_patch, obs_patch])
         plt.show()
+        
+        # Calculate the flux and error
+        w0,w1 = wavelength_edges(w[line.flux_mask])
+        x_min = np.min(w[line.flux_mask])
+        x_max = np.max(w[line.flux_mask])
+        total_sumflux = gaussian_integral(line.amp, line.mu, line.sigma, x_min, x_max)
+        sumerror = (np.sum(e[line.flux_mask]**2 * (w1-w0)**2))**0.5
 
-    # Calculate the flux and error
-    w0,w1 = wavelength_edges(w[line.flux_mask])
-    total_sumflux = np.sum(f[line.flux_mask]*(w1-w0))
-    sumerror = (np.sum(e[line.flux_mask]**2 * (w1-w0)**2))**0.5
+        # Calculate the continuum
+        for i in range(0, len(continuum_array)):
+            continuum.append(continuum_array[i])
+        continuum_sumflux = np.sum(continuum*(w1-w0))
 
-    # Calculate the continuum
-    for i in range(0, len(continuum_array)):
-        continuum.append(continuum_array[i])
-    continuum_sumflux = np.sum(continuum*(w1-w0))
+        # Check if noise
+        total_flux = total_sumflux - continuum_sumflux
+        if noise_bool_list[count]:
+            # Update emission line's noise bool
+            line.noise_bool = noise_bool_list[count]
+            # Update flux calculation
+            total_flux = sumerror * (-3)
+            sumerror = 0
 
-    # Check if noise
-    total_flux = total_sumflux - continuum_sumflux
-    if noise_bool_list[count]:
-        # Update emission line's noise bool
-        line.noise_bool = noise_bool_list[count]
-        # Update flux calculation
-        total_flux = sumerror * (-3)
-        sumerror = 0
+        # Append to flux list
+        flux[line.ion].append((line.wavelength, total_flux, sumerror, line.blended_bool))
 
-    # Append to flux list
-    flux[line.ion].append((line.wavelength, total_flux, sumerror, line.blended_bool))
-
-    count+=1 
-
-# Store noise booleans in a file
-if not noise_found:
+        count+=1 
+    
+    # Save to file
     noise_array = np.array(noise_bool_list)
     np.savetxt(noise_filename, noise_array)
 
-# Printing
-for ion in flux:
-    print(f"Ion: {ion} ")
-    for data in flux[ion]:
-        print(data)
+    # Printing
+    for ion in flux:
+        print(f"Ion: {ion} ")
+        for data in flux[ion]:
+            print(data)
 
 # Plot the emission lines and trendlines
 plt.figure(figsize=(14,10))
@@ -198,6 +211,10 @@ noise_patch = patches.Patch(color='darkgreen', alpha=0.5, label='Noise')
 trendline_patch = patches.Patch(color='darkorange', alpha=0.5, label='Flux Trendline')
 plt.legend(handles=[emission_patch, noise_patch, trendline_patch])
 plt.show()
+
+# Exit if flux has already been calculated <- NOTE: to adjust flux calculations, DELETE all flux calculations and noise bool
+if noise_found:
+    sys.exit('Flux already added to ECSV and FITS file, to recalculate, delete noise file and restart')
 
 # Create a fits file
 data_array = []

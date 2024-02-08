@@ -129,11 +129,11 @@ if not noise_found:
         init_amp = np.max(f[line.flux_mask])
         init_params = [init_amp, np.mean(w[line.flux_mask]), np.std(w[line.flux_mask])]
         popt, _ = curve_fit(gaussian, w[line.flux_mask], f[line.flux_mask], p0=init_params, maxfev = 10000)
-        line.amp, line.mu, line.sigma = popt
+        amp, mu, sigma = popt
 
         # Plot Gaussian fit
         x = np.linspace(np.min(w[line.flux_mask]), np.max(w[line.flux_mask]), 1000)
-        y = gaussian(x, line.amp, line.mu, line.sigma)
+        y = gaussian(x, amp, mu, sigma)
         ax.plot(x, y, '-', color='royalblue', linewidth=2.0)
 
         # Plot emission lines

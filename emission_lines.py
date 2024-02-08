@@ -13,16 +13,13 @@ noise_bool_list = []
 doppler_bool_list = []
 
 class emission_line:
-    def __init__(self, wavelength, ion, obs_lam, flux_mask, noise_bool, blended_bool, gauss_amplitude=0, gauss_mean=0, gauss_std=0):
+    def __init__(self, wavelength, ion, obs_lam, flux_mask, noise_bool, blended_bool):
         self.wavelength = wavelength
         self.ion = ion
         self.obs_lam = obs_lam
         self.flux_mask = flux_mask
         self.noise_bool = noise_bool
         self.blended_bool = blended_bool
-        self.amp = gauss_amplitude
-        self.mu = gauss_mean
-        self.sigma = gauss_std
 
 
 """
@@ -156,7 +153,6 @@ def gaussian(x, amp, mu, sigma):
 def gaussian_integral(amp, mu, sigma, x_min, x_max):
     integrand = lambda x: amp * norm.pdf(x, mu, sigma)
     return quad(integrand, x_min, x_max)[0]
-
 
 
 """

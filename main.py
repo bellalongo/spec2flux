@@ -93,10 +93,18 @@ for wavelength in rest_lam_data["Wavelength"]:
         else:
             wavelength_mask = (w > (obs_lam.value - flux_range)) & (w < (obs_lam.value + flux_range))
             prev_blended_bool = False
+        
+        # Gaussian fit
+        init_amp = np.max(f[wavelength_mask])
+        init_params = [init_amp, np.mean(w[wavelength_mask]), np.std(w[wavelength_mask])]
+        popt, _ = curve_fit(gaussian, w[wavelength_mask], f[wavelength_mask], p0=init_params, maxfev = 100000)
+        amp, mu, sigma = popt
+        x = np.linspace(np.min(w[wavelength_mask]), np.max(w[wavelength_mask]), len(w[wavelength_mask]))
+        y = gaussian(x, amp, mu, sigma)
      
         # Append emission line
         ion = rest_lam_data['Ion'][count]
-        emission_lines_list.append(emission_line(wavelength, ion, obs_lam, wavelength_mask, False, blended_line_bool))
+        emission_lines_list.append(emission_line(wavelength, ion, obs_lam, wavelength_mask, False, blended_line_bool, x, y))
     
         # Update variables
         previous_obs = obs_lam
@@ -109,10 +117,6 @@ if not noise_found:
     count = 0
     # Determine if the current emission line is noise
     for line in emission_lines_list:
-        # Find the continuum
-        continuum = []
-        continuum_array = split_create_trendline(w[line.flux_mask], f[line.flux_mask], peak_width_pixels)
-
         # Create basic plot
         fig = plt.figure(figsize=(14,7))
         ax = fig.add_subplot()
@@ -125,16 +129,12 @@ if not noise_found:
         rest_patch = patches.Patch(color='lightcoral', alpha=0.5, label='Rest Wavelength')
         obs_patch = patches.Patch(color='darkred', alpha=0.5, label='Observable Wavelength')
 
-        # Calculate  Gaussian fit
-        init_amp = np.max(f[line.flux_mask])
-        init_params = [init_amp, np.mean(w[line.flux_mask]), np.std(w[line.flux_mask])]
-        popt, _ = curve_fit(gaussian, w[line.flux_mask], f[line.flux_mask], p0=init_params, maxfev = 10000)
-        amp, mu, sigma = popt
-
         # Plot Gaussian fit
-        x = np.linspace(np.min(w[line.flux_mask]), np.max(w[line.flux_mask]), 1000)
-        y = gaussian(x, amp, mu, sigma)
-        ax.plot(x, y, '-', color='royalblue', linewidth=2.0)
+        ax.plot(line.gaussian_x, line.gaussian_y, '-', color='royalblue', linewidth=2.0)
+
+        # Find Gaussian continuum
+        continuum = []
+        continuum_array = gaussian_trendline(w[line.flux_mask], line.gaussian_x, line.gaussian_y)
 
         # Plot emission lines
         ax.plot(w[line.flux_mask], f[line.flux_mask], color="steelblue")
@@ -149,7 +149,7 @@ if not noise_found:
         w0,w1 = wavelength_edges(w[line.flux_mask])
         x_min = np.min(w[line.flux_mask])
         x_max = np.max(w[line.flux_mask])
-        total_sumflux = gaussian_integral(line.amp, line.mu, line.sigma, x_min, x_max)
+        total_sumflux = gaussian_integral(amp, mu, sigma, x_min, x_max)
         sumerror = (np.sum(e[line.flux_mask]**2 * (w1-w0)**2))**0.5
 
         # Calculate the continuum
@@ -187,7 +187,7 @@ plt.plot(w[mask], f[mask], color="steelblue")
 count = 0
 
 for line in emission_lines_list:
-    continuum_array = split_create_trendline(w[line.flux_mask], f[line.flux_mask], peak_width_pixels)
+    continuum_array = gaussian_trendline(w[line.flux_mask], line.gaussian_x, line.gaussian_y)
 
     if line.noise_bool:
         line_color = 'darkgreen'

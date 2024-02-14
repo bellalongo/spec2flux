@@ -83,7 +83,29 @@ def noisy_trendline(wavelength_data, flux_data, blended_line_bool):
         plt.plot(wavelength_array, p(wavelength_array), color="powderblue", alpha=0.5)
        
     return p(wavelength_array) 
+
+
+"""
+    Creates a trendline based on a gaussian fit using the lowest y value
+    Name:       gaussian_trendline()
+    Parameters: 
+
+"""
+def gaussian_trendline(wavelength_data, gauss_x, gauss_y, ):
+    # Initialize variables
+    print(gauss_y)
+    length = len(wavelength_data)
+    min_flux = min(gauss_y)
+
+    flux_array = [min_flux for i in range(length)]
+           
+    wavelength_array = np.array(wavelength_data)
     
+    z = np.polyfit(wavelength_data, flux_array, 1)
+    p = np.poly1d(z)
+    
+    return p(wavelength_array)
+
 
 """
     Checks if an integer is within the range of two values

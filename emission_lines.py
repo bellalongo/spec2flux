@@ -7,19 +7,22 @@ from scipy.optimize import curve_fit
 from scipy.stats import norm
 import astropy.units as u
 from scipy.integrate import quad
+from collections import defaultdict
 
 
 noise_bool_list = []
 doppler_bool_list = []
 
 class emission_line:
-    def __init__(self, wavelength, ion, obs_lam, flux_mask, noise_bool, blended_bool):
+    def __init__(self, wavelength, ion, obs_lam, flux_mask, noise_bool, blended_bool, gaussian_x, gaussian_y):
         self.wavelength = wavelength
         self.ion = ion
         self.obs_lam = obs_lam
         self.flux_mask = flux_mask
         self.noise_bool = noise_bool
         self.blended_bool = blended_bool
+        self.gaussian_x = gaussian_x
+        self.gaussian_y = gaussian_y
 
 
 """
@@ -60,11 +63,12 @@ def peak_width_finder(grating, wavelength_data):
 """
 def doppler_shift_calc(rest_lam_data, wavelength_data, flux_data, flux_range, star_name, doppler_filename):
     # Find the high liklihood emission lines
-    high_liklihood_df = rest_lam_data[rest_lam_data["Likelihood to measure"] == "High"]
+    high_liklihood_df = rest_lam_data[(rest_lam_data["Likelihood to measure"] == "High") & (rest_lam_data["Wavelength"] > 1200)]
     rest_candidates = []
     obs_candidates = []
     dv = []
     
+    # Implement blended line check using checkinrange!
     for _, row in  high_liklihood_df.iterrows():
         # Initalization
         wavelength = row[1]

@@ -120,29 +120,29 @@ if not noise_found:
         # Create basic plot
         fig = plt.figure(figsize=(14,7))
         ax = fig.add_subplot()
-        fig.suptitle('Click "y" if noise, "n" if not', fontsize=14, fontweight='bold')
-        plt.title("Flux vs Wavelength for " + star_name)
-        plt.xlabel('Wavelength (\AA)')
-        plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ AA$^{-1}$)')
-        plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ AA$^{-1}$)')
-        trendline_patch = patches.Patch(color='darkorange', alpha=0.5, label='Continuum')
-        rest_patch = patches.Patch(color='lightcoral', alpha=0.5, label='Rest Wavelength')
-        obs_patch = patches.Patch(color='darkred', alpha=0.5, label='Observable Wavelength')
+        fig.suptitle("Click 'y' if should be used for doppler calculation, 'n' if not", fontweight='bold')
+        plt.title("Flux vs Wavelength for " + star_name, fontsize=18)
+        plt.xlabel('Wavelength (Å)', fontsize=12)
+        plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ Å$^{-1}$)', fontsize=12)
+        trendline_patch = patches.Patch(color='pink', alpha=0.8, label='Continuum')
+        rest_patch = patches.Patch(color='lightcoral', alpha=0.8, label='Rest Wavelength')
+        obs_patch = patches.Patch(color='darkred', alpha=0.8, label='Observable Wavelength')
+        gauss_patch = patches.Patch(color='mediumvioletred', alpha=0.8, label='Gaussian Fit')
 
         # Plot Gaussian fit
-        ax.plot(line.gaussian_x, line.gaussian_y, '-', color='royalblue', linewidth=2.0)
+        ax.plot(line.gaussian_x, line.gaussian_y, '-', color='mediumvioletred', linewidth= 2.0)
 
         # Find Gaussian continuum
         continuum = []
         continuum_array = gaussian_trendline(w[line.flux_mask], line.gaussian_x, line.gaussian_y)
 
         # Plot emission lines
-        ax.plot(w[line.flux_mask], f[line.flux_mask], color="steelblue")
-        ax.plot(w[line.flux_mask], continuum_array, color="darkorange", alpha=0.7)
-        plt.axvline(x = line.wavelength, color = 'lightcoral', label = 'Rest wavelength')
-        plt.axvline(x = line.obs_lam.value, color = 'darkred', label = 'Observed wavelength')
+        ax.plot(w[line.flux_mask], f[line.flux_mask], linewidth = 1.2, alpha = 0.8)
+        ax.plot(w[line.flux_mask], continuum_array, color="pink", alpha=0.7)
+        plt.axvline(x = line.wavelength, color = 'lightcoral', label = 'Rest wavelength', linewidth= 1.8, ls = '--')
+        plt.axvline(x = line.obs_lam.value, color = 'darkred', label = 'Observed wavelength', linewidth= 1.8, ls = '--')
         cid = fig.canvas.mpl_connect('key_press_event', lambda event: on_key(event, 'Noise Detection'))
-        plt.legend(handles=[trendline_patch, rest_patch, obs_patch])
+        plt.legend(handles=[rest_patch, obs_patch, gauss_patch, trendline_patch])
         plt.show()
         
         # Calculate the flux and error

@@ -31,17 +31,12 @@ data = fits.getdata(filename)
 w, f , e = data['WAVELENGTH'], data['FLUX'], data['ERROR']
 mask = (w > 1160) # change if the spectra starts at a different wavelength
 
-# Find peaks
-if 'L' in grating:
-    peaks, properties = find_peaks(f[mask], height = 0.7*sum(f[mask])/len(f[mask]), width = 0)
-elif 'M' in grating:
-    peaks, properties  = find_peaks(f[mask], height = 10*sum(f[mask])/len(f[mask]), prominence = 10*sum(f[mask])/len(f[mask]), width = 0, threshold = (1/10)*sum(f[mask])/len(f[mask]))
-else:
-    sys.exit("Invalid grating")
-
 # Load Rest Lam data
 data = pd.read_csv("DEM_goodlinelist.csv")
 rest_lam_data = pd.DataFrame(data)
+
+# Group emission lines
+grouped_lines = grouping_emission_lines(1160, rest_lam_data)
 
 # Find the average width of the peaks
 peak_width, peak_width_pixels, flux_range = peak_width_finder(grating, w[mask])
@@ -52,7 +47,7 @@ doppler_found = exists(doppler_filename)
 if doppler_found:
     doppler_shift = np.loadtxt(doppler_filename)*(u.km/u.s)
 else:
-    doppler_shift = doppler_shift_calc(rest_lam_data, w[mask], f[mask], flux_range, star_name, doppler_filename)
+    doppler_shift = doppler_shift_calc(grouped_lines, w[mask], f[mask], flux_range, peak_width, star_name, doppler_filename)
 
 # Check if noise file exists 
 noise_filename = "./noise/" + star_name + "_noise.txt"

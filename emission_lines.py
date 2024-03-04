@@ -8,6 +8,8 @@ from scipy.stats import norm
 import astropy.units as u
 from scipy.integrate import quad
 from collections import defaultdict
+from astropy.modeling.models import Voigt1D
+from astropy.modeling import models, fitting
 
 
 noise_bool_list = []
@@ -52,6 +54,53 @@ def peak_width_finder(grating, wavelength_data):
 
 
 """
+    Groups blended emission lines together based off of ion, and a pre-determined tolerance
+    (Note: this function assumes the DEM data is increasing)
+    Name:       grouping_emission_lines()
+    Parameters: 
+                rest_lam_data: dataframe of emission lines
+    Returns:
+                ion_groups: dictionary with ion name as the key, and  blended groups for that as the value
+"""
+def grouping_emission_lines(min_wavelength, rest_lam_data):
+    # Initialize variables
+    tolerance = 10.
+    ion_groups = {}
+    close_group_found = False
+
+    # Loop through emission lines
+    for _, row in rest_lam_data.iterrows():
+        # Extract ion name and wavelength
+        ion = row["Ion"]
+        wavelength = float(row["Wavelength"])
+
+        if wavelength < min_wavelength: 
+            continue
+
+        # Check if ion already exists in the dictionary
+        if ion not in ion_groups:
+            ion_groups[ion] = [[wavelength]]
+        else:
+            # Reset
+            close_group_found = False
+            for group in ion_groups[ion]:
+                # Check if the largest value in the group - wavelength is less than the tolerance
+                if abs(max(group) - wavelength) <= tolerance:
+                    group.append(wavelength)
+                    close_group_found = True
+                    break
+            
+            # If no close group was found
+            if not close_group_found:
+                ion_groups[ion].append([wavelength])
+
+    for ion in ion_groups:
+        print(f"Ion: {ion} {ion_groups[ion]}")
+
+    return ion_groups
+
+
+"""
     Calculates the doppler shift based off of peaks and high liklihood rest lam lines
     Name:       doppler_shift_calc()
     Parameters: 
@@ -61,12 +110,51 @@ def peak_width_finder(grating, wavelength_data):
     Returns:
                 doppler_shift: doppler shift of the spectra
 """
-def doppler_shift_calc(rest_lam_data, wavelength_data, flux_data, flux_range, star_name, doppler_filename):
-    # Find the high liklihood emission lines
-    high_liklihood_df = rest_lam_data[(rest_lam_data["Likelihood to measure"] == "High") & (rest_lam_data["Wavelength"] > 1200)]
-    rest_candidates = []
-    obs_candidates = []
-    dv = []
+def doppler_shift_calc(grouped_lines, w, f, flux_range, peak_width, star_name, doppler_filename):
+    # Iterate through groups
+    for ion in grouped_lines:
+        for group in grouped_lines[ion]:
+            voigt_profiles = []
+            group_mask = (w > group[0] - peak_width) & (w < group[len(group) - 1] + peak_width)
+            for wavelength in group:
+                # Intialize parameters
+                wavelength_mask = (w > wavelength - peak_width/2) & (w < wavelength + peak_width/2)
+
+                init_x0 = wavelength
+                init_amp = np.max(f[wavelength_mask])
+                init_fwhm_g = 0.1
+                init_fwhm_l = 0.1
+
+                # Voigt distributions
+                voigt_profile = Voigt1D(x_0 = init_x0, amplitude_L = init_amp, fwhm_L = init_fwhm_l, fwhm_G = init_fwhm_g)
+                voigt_profiles.append(voigt_profile)
+            
+            # Combine voigt distribitions
+            composite_model = voigt_profiles[0]
+            for voigt_profile in voigt_profiles[1:]:
+                composite_model += voigt_profile
+
+            try: 
+                # Fit the model
+                fitter = fitting.LevMarLSQFitter()
+                fitted_model = fitter(composite_model, w[group_mask], f[group_mask])
+            except RuntimeError:
+                continue
+            
+            # Plotting
+            fig = plt.figure(figsize=(14,7), facecolor="white")
+            ax = fig.add_subplot()
+            plt.title(f"Flux vs Wavelength for {ion}")
+            plt.xlabel('Wavelength (Å)', fontsize =12)
+            plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ Å$^{-1}$)', fontsize=12)
+
+            plt.plot(w[group_mask], f[group_mask], )
+            plt.plot(w[group_mask], fitted_model(w[group_mask]))     
+            plt.vlines(group, ymin=min(f[group_mask]), ymax=max(f[group_mask]), colors='pink', linestyles='solid', alpha=0.7)       
+            plt.show()
+
+    sys.exit()
+
     
     # Implement blended line check using checkinrange!
     for _, row in  high_liklihood_df.iterrows():

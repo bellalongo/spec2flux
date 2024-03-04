@@ -88,18 +88,10 @@ for wavelength in rest_lam_data["Wavelength"]:
         else:
             wavelength_mask = (w > (obs_lam.value - flux_range)) & (w < (obs_lam.value + flux_range))
             prev_blended_bool = False
-        
-        # Gaussian fit
-        init_amp = np.max(f[wavelength_mask])
-        init_params = [init_amp, np.mean(w[wavelength_mask]), np.std(w[wavelength_mask])]
-        popt, _ = curve_fit(gaussian, w[wavelength_mask], f[wavelength_mask], p0=init_params, maxfev = 100000)
-        amp, mu, sigma = popt
-        x = np.linspace(np.min(w[wavelength_mask]), np.max(w[wavelength_mask]), len(w[wavelength_mask]))
-        y = gaussian(x, amp, mu, sigma)
      
         # Append emission line
         ion = rest_lam_data['Ion'][count]
-        emission_lines_list.append(emission_line(wavelength, ion, obs_lam, wavelength_mask, False, blended_line_bool, x, y))
+        emission_lines_list.append(emission_line(wavelength, ion, obs_lam, wavelength_mask, False, blended_line_bool))
     
         # Update variables
         previous_obs = obs_lam

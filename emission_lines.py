@@ -10,21 +10,23 @@ from scipy.integrate import quad
 from collections import defaultdict
 from astropy.modeling.models import Voigt1D
 from astropy.modeling import models, fitting
+import seaborn as sns
 
 
 noise_bool_list = []
 doppler_bool_list = []
+emission_line_list = []
 
 class emission_line:
-    def __init__(self, wavelength, ion, obs_lam, flux_mask, noise_bool, blended_bool, gaussian_x, gaussian_y):
+    def __init__(self, wavelength, ion, obs_lam, flux_mask, noise_bool, blended_bool):
         self.wavelength = wavelength
         self.ion = ion
         self.obs_lam = obs_lam
         self.flux_mask = flux_mask
         self.noise_bool = noise_bool
         self.blended_bool = blended_bool
-        self.gaussian_x = gaussian_x
-        self.gaussian_y = gaussian_y
+
+        # Maybe add functions for updating?
 
 
 """
@@ -111,6 +113,8 @@ def grouping_emission_lines(min_wavelength, rest_lam_data):
                 doppler_shift: doppler shift of the spectra
 """
 def doppler_shift_calc(grouped_lines, w, f, flux_range, peak_width, star_name, doppler_filename):
+    rest_candidates = []
+    obs_candidates = []
     # Iterate through groups
     for ion in grouped_lines:
         for group in grouped_lines[ion]:
@@ -129,91 +133,76 @@ def doppler_shift_calc(grouped_lines, w, f, flux_range, peak_width, star_name, d
                 voigt_profile = Voigt1D(x_0 = init_x0, amplitude_L = init_amp, fwhm_L = init_fwhm_l, fwhm_G = init_fwhm_g)
                 voigt_profiles.append(voigt_profile)
             
+            # Update emission line list
+            emission_line_list.append(emission_line(wavelength, ion, group_mask, None, False, True if len(f[group_mask]) > 1 else False))
+            
             # Combine voigt distribitions
             composite_model = voigt_profiles[0]
             for voigt_profile in voigt_profiles[1:]:
                 composite_model += voigt_profile
 
+            # Try to fit the model
             try: 
-                # Fit the model
                 fitter = fitting.LevMarLSQFitter()
                 fitted_model = fitter(composite_model, w[group_mask], f[group_mask])
+
             except RuntimeError:
                 continue
-            
-            # Plotting
+
+            # Basic plot
+            sns.set_theme()
             fig = plt.figure(figsize=(14,7), facecolor="white")
             ax = fig.add_subplot()
             plt.title(f"Flux vs Wavelength for {ion}")
+            fig.suptitle("Click 'y' if should be used for doppler calculation, 'n' if not", fontweight='bold')
             plt.xlabel('Wavelength (Å)', fontsize =12)
             plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ Å$^{-1}$)', fontsize=12)
+            cid = fig.canvas.mpl_connect('key_press_event', lambda event: on_key(event, 'Doppler Calculation'))
 
-            plt.plot(w[group_mask], f[group_mask], )
-            plt.plot(w[group_mask], fitted_model(w[group_mask]))     
-            plt.vlines(group, ymin=min(f[group_mask]), ymax=max(f[group_mask]), colors='pink', linestyles='solid', alpha=0.7)       
+            # Plotting rest and obs emission lines
+            group_rest_candidates = []
+            group_obs_candidates = []
+            for i, wavelength in enumerate(group):
+                rest_lam = plt.axvline(x=wavelength, color = "#F96E46", linestyle=((0, (5, 5))), linewidth=1)
+                group_rest_candidates.append(wavelength)
+
+                if len(group) == 1:
+                    obs_lam = plt.axvline(x= fitted_model.x_0.value, color = "#8F1423", linewidth = 1)
+                    group_obs_candidates.append(fitted_model.x_0.value)
+                    break
+                obs_lam = plt.axvline(x= fitted_model[i].x_0.value, color = "#8F1423", linewidth = 1)
+                group_obs_candidates.append(fitted_model[i].x_0.value)
+            
+            plt.plot(w[group_mask], f[group_mask], linewidth=1)
+            voigt_fit, = plt.plot(w[group_mask], fitted_model(w[group_mask]), color = "#111D4A")     
+            legend = plt.legend([rest_lam, obs_lam, voigt_fit], ["Rest Wavelength", "Observed Wavelength", "Voigt Fit"])
+            legend.get_frame().set_facecolor('white')
             plt.show()
 
-    sys.exit()
+            # Update doppler shift calc arrays
+            rest_candidates.append(group_rest_candidates)
+            obs_candidates.append(group_obs_candidates)
+        
+    assert len(doppler_bool_list) > 0, "You didn't click 'y' and 'n' to choose did you?"
 
-    
-    # Implement blended line check using checkinrange!
-    for _, row in  high_liklihood_df.iterrows():
-        # Initalization
-        wavelength = row[1]
-        flux_range_mask = (wavelength_data > (wavelength - flux_range)) & (wavelength_data < (wavelength + flux_range))
-
-        # See if a gaussian fit can be made
-        try:
-            # Inital parameter guesses + Gaussian fit
-            init_amp = np.max(flux_data[flux_range_mask])
-            init_params = [init_amp, np.mean(wavelength_data[flux_range_mask]), np.std(wavelength_data[flux_range_mask])]
-            popt, _ = curve_fit(gaussian, wavelength_data[flux_range_mask], flux_data[flux_range_mask], p0=init_params)
-            amp, mu, sigma = popt
-        except RuntimeError:
-            continue
-
-        # Append values to be used for doppler calc
-        rest_candidates.append(wavelength)
-        obs_candidates.append(mu)
-
-        # Create basic plot
-        fig = plt.figure(figsize=(14, 7), facecolor='white')
-        ax = fig.add_subplot()
-        fig.suptitle("Click 'y' if should be used for doppler calculation, 'n' if not", fontweight='bold')
-        plt.title("Flux vs Wavelength for " + star_name, fontsize=18)
-        plt.xlabel('Wavelength (Å)', fontsize=12)
-        plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ Å$^{-1}$)', fontsize=12)
-        rest_patch = patches.Patch(color='plum', alpha=0.8, label='Rest Wavelength')
-        obs_patch = patches.Patch(color='mediumorchid', alpha=0.8, label='Observable Wavelength')
-        gauss_patch = patches.Patch(color='purple', alpha=0.8, label='Gaussian Fit')
-
-        # Plot emission lines 
-        ax.plot(wavelength_data[flux_range_mask], flux_data[flux_range_mask], linewidth = 1.2)
-        plt.axvline(x=wavelength, color='plum', label='Emission Line Candidate', linewidth=1.8)
-        plt.axvline(x=mu, color='mediumorchid', label='Observable Wavelength Candidate', linewidth=1.8)
-        cid = fig.canvas.mpl_connect('key_press_event', lambda event: on_key(event, 'Doppler Calculation'))
-
-        # Plot the fitted Gaussian profile
-        x = np.linspace(np.min(wavelength_data[flux_range_mask]), np.max(wavelength_data[flux_range_mask]), 1000)
-        y = gaussian(x, amp, mu, sigma)
-        ax.plot(x, y, '-', color='purple', linewidth=1.5)
-        plt.legend(handles=[rest_patch, obs_patch, gauss_patch])
-        plt.show()
-    
-    # Check
-    assert len(rest_candidates) == len(obs_candidates)
-    
+    dv = []
     # Calculate doppler shift
-    for i, wavelength in enumerate(rest_candidates):
-        u_rest_lam = wavelength * u.AA
-        u_obs_lam = obs_candidates[i] * u.AA
-        dv.append(u_obs_lam.to(u.km/u.s,  equivalencies=u.doppler_optical(u_rest_lam)))
+    for i, boolean in enumerate(doppler_bool_list):
+        group_doppler = []
+        if boolean:
+            # Iterate through that group
+            for j, rest_wavelength in enumerate(rest_candidates[i]):
+                print(rest_candidates[i])
+                u_rest_lam = rest_wavelength * u.AA
+                u_obs_lam = obs_candidates[i][j] * u.AA
+                group_doppler.append(u_obs_lam.to(u.km/u.s,  equivalencies=u.doppler_optical(u_rest_lam)))
+            dv.append(sum(group_doppler)/ len(group_doppler))
     doppler_shift = sum(dv)/len(dv)
 
     # Store value
     with open(doppler_filename, 'a') as f:
         f.write(f"{doppler_shift.value:.3f}\n")
-
+    
     return doppler_shift
 
     

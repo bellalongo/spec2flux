@@ -49,8 +49,6 @@ if doppler_found:
 else:
     doppler_shift = doppler_shift_calc(grouped_lines, w[mask], f[mask], flux_range, peak_width, star_name, doppler_filename)
 
-print("passed")
-
 # Check if noise file exists 
 noise_filename = "./noise/" + star_name + "_noise.txt"
 noise_found = exists(noise_filename)

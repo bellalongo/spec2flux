@@ -13,7 +13,8 @@ from collections import defaultdict
 from astropy.table import Table
 from flux_calc import *
 from emission_lines import *
-import csv
+import os
+from scipy.integrate import simps
 
 
 # Pull spectra information
@@ -30,30 +31,125 @@ instrument = instrument.upper()
 data = fits.getdata(filename)
 w, f , e = data['WAVELENGTH'], data['FLUX'], data['ERROR']
 mask = (w > 1160) # change if the spectra starts at a different wavelength
+wavelength_data, flux_data, error_data = w[mask], f[mask], e[mask]
+fresh_start = False # will delete all existing files for that star
 
 # Load Rest Lam data
 data = pd.read_csv("DEM_goodlinelist.csv")
 rest_lam_data = pd.DataFrame(data)
 
+# Filenames
+doppler_filename = "./doppler/" + star_name + "_doppler.txt"
+noise_filename = "./noise/" + star_name + "_noise.txt"
+emission_line_filename = "./emission_lines" + star_name + "_lines.txt"
+
 # Group emission lines
 grouped_lines = grouping_emission_lines(1160, rest_lam_data)
 
 # Find the average width of the peaks
-peak_width, peak_width_pixels, flux_range = peak_width_finder(grating, w[mask])
+peak_width, peak_width_pixels, flux_range = peak_width_finder(grating, wavelength_data)
+
+# Delete existing data if fresh start
+if fresh_start:
+    if any(exists([doppler_filename, noise_filename, emission_line_filename])):
+        os.remove(doppler_filename)
+        os.remove(noise_filename)
+        os.remove(emission_line_filename)
 
 # Check if doppler file exists
-doppler_filename = "./doppler/" + star_name + "_doppler.txt"
 doppler_found = exists(doppler_filename)
 if doppler_found:
     doppler_shift = np.loadtxt(doppler_filename)*(u.km/u.s)
 else:
-    doppler_shift = doppler_shift_calc(grouped_lines, w[mask], f[mask], flux_range, peak_width, star_name, doppler_filename)
+    doppler_shift = doppler_shift_calc(grouped_lines, wavelength_data, flux_data, flux_range, peak_width, doppler_filename)
 
 # Check if noise file exists 
-noise_filename = "./noise/" + star_name + "_noise.txt"
 noise_found = exists(noise_filename)
 if noise_found:
     noise_bool_list = np.loadtxt(noise_filename)
+
+# Check if emission line file exists
+emission_line_found = exists(emission_line_filename)
+if emission_line_found:
+    # Load class data! -> UPDATE ME!
+    print("wow")
+
+# Initialize necessary variables
+flux = defaultdict(list)    
+for index, line in enumerate(emission_line_list):
+    # Calculate obs_lam for each emission line
+    rest_lam = line.wavelength_group[len(line.wavelength_group) - 1] * u.AA
+    line.obs_lam = doppler_shift.to(u.AA,  equivalencies=u.doppler_optical(rest_lam))
+
+    # Check if noise has been calculated yet
+    if not noise_found:
+        # If has a voigt fit is not noise
+        if line.fitted_model:
+            noise_bool_list.append(False)
+            
+            # Calculate continuum and total flux
+            continuum = [min(line.fitted_model(wavelength_data[line.flux_mask])) for _ in range(len(wavelength_data[line.flux_mask]))]
+            total_sumflux = simps(line.fitted_model(wavelength_data[line.flux_mask]), x = wavelength_data[line.flux_mask])            
+        else:
+            # Calculate continuum
+            continuum = []
+            continuum = split_create_trendline(wavelength_data[line.flux_mask], flux_data[line.flux_mask], peak_width_pixels)
+
+            # Determine if noise plot
+            sns.set_style("darkgrid")
+            sns.set_theme(rc={'axes.facecolor':'#F8F5F2'})
+            fig = plt.figure(figsize=(14,7))
+            ax = fig.add_subplot()
+            plt.title(f"Flux vs Wavelength for {line.ion}")
+            fig.suptitle("Click 'y' if is noise, 'n' if not", fontweight='bold')
+            plt.xlabel('Wavelength (Å)', fontsize =12)
+            plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ Å$^{-1}$)', fontsize=12)
+            cid = fig.canvas.mpl_connect('key_press_event', lambda event: on_key(event, 'Noise Detection'))
+            
+            # Plot info
+            plt.plot(wavelength_data[line.flux_mask], flux_data[line.flux_mask], linewidth=1, color = '#4B3C30')
+            continuum_fit, = plt.plot(wavelength_data[line.flux_mask], continuum, color = "#DA667B")
+
+            # Plot all rest wavelengths
+            for wavelength in line.wavelength_group:
+                rest_lam = plt.axvline(x=wavelength, color = "#71816D", linewidth = 1, linestyle=((0, (5, 5))))
+            obs_lam = plt.axvline(x = line.obs_lam.value, color = "#D7816A", linewidth = 1)
+
+            legend = plt.legend([rest_lam, obs_lam, continuum_fit], ["Rest Wavelength", "Observed Wavelength", "Continuum"])
+            legend.get_frame().set_facecolor('white')
+            plt.show()
+
+            # Calculate flux -> can maybe try voigt fit again or do gaussian?
+            total_sumflux = [0] # CHANGE ME
+
+
+        # Calculate edges and error
+        w0,w1 = wavelength_edges(wavelength_data[line.flux_mask])
+        sumerror = (np.sum(error_data[line.flux_mask]**2 * (w1-w0)**2))**0.5
+
+        # If noise
+        if noise_bool_list[index]:
+            total_flux = sumerror * (-3)
+            sumerror = 0
+        # Calculate flux normally
+        else:
+            print('AHHHH UPDATE ME TO THE COMMENT')
+            # total_flux = total_sumflux - continuum
+        
+        # Update parameters
+        line.noise_bool = noise_bool_list[index]
+        line.continuum = continuum
+        
+
+        print(noise_bool_list[index])
+
+sys.exit()
+
+
+
+
+
+
 
 # Initializing necessary variables
 flux = defaultdict(list)
@@ -64,41 +160,6 @@ prev_blended_bool = False
 prev_left_bound = 0
 emission_lines_list = []
 
-# Find the emission lines
-for wavelength in rest_lam_data["Wavelength"]:
-    if(wavelength > 1160):  # change bounds if the spectra starts/ends at a different wavelength (and measure type)
-        # obs_lam calculation from doppler
-        rest_lam = wavelength * u.AA
-        obs_lam = doppler_shift.to(u.AA,  equivalencies=u.doppler_optical(rest_lam))
-        
-        # Check for blended lines
-        blended_line_bool = blended_line_check(previous_obs, obs_lam, iterations, flux_range)
-        # Check if previous lam was also a blended line
-        if blended_line_bool and prev_blended_bool:
-            wavelength_mask = (w > prev_left_bound) & (w < (obs_lam.value + flux_range))
-            prev_blended_bool = True
-            emission_lines_list.pop()
-        # If there is a blended line, and previous wasn't a blended line
-        elif blended_line_bool:
-            wavelength_mask = (w > (previous_obs.value - flux_range)) & (w < (obs_lam.value + flux_range))
-            prev_blended_bool = True
-            prev_left_bound = previous_obs.value - flux_range
-            emission_lines_list.pop()
-        # Not a blended line
-        else:
-            wavelength_mask = (w > (obs_lam.value - flux_range)) & (w < (obs_lam.value + flux_range))
-            prev_blended_bool = False
-     
-        # Append emission line
-        ion = rest_lam_data['Ion'][count]
-        emission_lines_list.append(emission_line(wavelength, ion, obs_lam, wavelength_mask, False, blended_line_bool))
-    
-        # Update variables
-        previous_obs = obs_lam
-        previous_index = len(flux[rest_lam_data['Ion'][count]]) - 1
-        iterations+=1
-
-    count+=1
 
 if not noise_found:
     count = 0

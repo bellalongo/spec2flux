@@ -2,15 +2,11 @@ import matplotlib.pyplot as plt
 from flux_calc import *
 import sys
 import math
-import matplotlib.patches as patches
-from scipy.optimize import curve_fit
-from scipy.stats import norm
 import astropy.units as u
-from scipy.integrate import quad
-from collections import defaultdict
 from astropy.modeling.models import Voigt1D
-from astropy.modeling import models, fitting
+from astropy.modeling import fitting
 import seaborn as sns
+import pickle
 
 
 noise_bool_list = []
@@ -18,15 +14,18 @@ doppler_bool_list = []
 emission_line_list = []
 
 class emission_line:
-    def __init__(self, wavelength, ion, obs_lam, flux_mask, noise_bool, blended_bool):
-        self.wavelength = wavelength
+    def __init__(self, wavelength_group, ion, obs_lam, flux_mask, noise_bool, blended_bool, fitted_model, continuum):
+        self.wavelength_group = wavelength_group
         self.ion = ion
         self.obs_lam = obs_lam
         self.flux_mask = flux_mask
         self.noise_bool = noise_bool
         self.blended_bool = blended_bool
+        self.fitted_model = fitted_model
+        self.continuum = continuum
 
-        # Maybe add functions for updating?
+    def update_fitted_model(self, new_fitted_model):
+        self.fitted_model = new_fitted_model
 
 
 """
@@ -42,9 +41,9 @@ class emission_line:
 def peak_width_finder(grating, wavelength_data):
     # Check grating
     if 'L' in grating:
-        peak_width = 3.5
+        peak_width = 5.0
     else:
-        peak_width = 0.35
+        peak_width = 0.5
         
     flux_range = 2*peak_width
 
@@ -96,9 +95,6 @@ def grouping_emission_lines(min_wavelength, rest_lam_data):
             if not close_group_found:
                 ion_groups[ion].append([wavelength])
 
-    for ion in ion_groups:
-        print(f"Ion: {ion} {ion_groups[ion]}")
-
     return ion_groups
 
 
@@ -112,17 +108,16 @@ def grouping_emission_lines(min_wavelength, rest_lam_data):
     Returns:
                 doppler_shift: doppler shift of the spectra
 """
-def doppler_shift_calc(grouped_lines, w, f, flux_range, peak_width, star_name, doppler_filename):
-    rest_candidates = []
-    obs_candidates = []
+def doppler_shift_calc(grouped_lines, w, f, flux_range, peak_width, doppler_filename):
+    rest_candidates, obs_candidates, emission_line_objs, all_fitted_models = [], [], [], []
     # Iterate through groups
     for ion in grouped_lines:
         for group in grouped_lines[ion]:
             voigt_profiles = []
-            group_mask = (w > group[0] - peak_width) & (w < group[len(group) - 1] + peak_width)
+            group_mask = (w > group[0] - peak_width) & (w < group[len(group) - 1] + peak_width) # maybe change to flux range?
             for wavelength in group:
                 # Intialize parameters
-                wavelength_mask = (w > wavelength - peak_width/2) & (w < wavelength + peak_width/2)
+                wavelength_mask = (w > wavelength - peak_width/2) & (w < wavelength + peak_width/2) # maybe change to peak width?
 
                 init_x0 = wavelength
                 init_amp = np.max(f[wavelength_mask])
@@ -134,7 +129,16 @@ def doppler_shift_calc(grouped_lines, w, f, flux_range, peak_width, star_name, d
                 voigt_profiles.append(voigt_profile)
             
             # Update emission line list
-            emission_line_list.append(emission_line(wavelength, ion, group_mask, None, False, True if len(f[group_mask]) > 1 else False))
+            group_emission_line_obj = emission_line(
+                wavelength_group = group, 
+                ion = ion, 
+                obs_lam = None, 
+                flux_mask = group_mask, 
+                noise_bool = None, 
+                blended_bool = True if len(f[group_mask]) > 1 else False, 
+                fitted_model = None, 
+                continuum = None)
+            emission_line_list.append(group_emission_line_obj)
             
             # Combine voigt distribitions
             composite_model = voigt_profiles[0]
@@ -145,7 +149,8 @@ def doppler_shift_calc(grouped_lines, w, f, flux_range, peak_width, star_name, d
             try: 
                 fitter = fitting.LevMarLSQFitter()
                 fitted_model = fitter(composite_model, w[group_mask], f[group_mask])
-
+                all_fitted_models.append(fitted_model)
+                emission_line_objs.append(group_emission_line_obj)
             except RuntimeError:
                 continue
 
@@ -160,8 +165,7 @@ def doppler_shift_calc(grouped_lines, w, f, flux_range, peak_width, star_name, d
             cid = fig.canvas.mpl_connect('key_press_event', lambda event: on_key(event, 'Doppler Calculation'))
 
             # Plotting rest and obs emission lines
-            group_rest_candidates = []
-            group_obs_candidates = []
+            group_rest_candidates, group_obs_candidates = [], []
             for i, wavelength in enumerate(group):
                 rest_lam = plt.axvline(x=wavelength, color = "#F96E46", linestyle=((0, (5, 5))), linewidth=1)
                 group_rest_candidates.append(wavelength)
@@ -182,17 +186,20 @@ def doppler_shift_calc(grouped_lines, w, f, flux_range, peak_width, star_name, d
             # Update doppler shift calc arrays
             rest_candidates.append(group_rest_candidates)
             obs_candidates.append(group_obs_candidates)
-        
+
     assert len(doppler_bool_list) > 0, "You didn't click 'y' and 'n' to choose did you?"
+    assert len(doppler_bool_list) == len(rest_candidates), "Did you click out of the figure instead of clicking 'y' or 'n'?" 
 
     dv = []
     # Calculate doppler shift
     for i, boolean in enumerate(doppler_bool_list):
         group_doppler = []
         if boolean:
+            # Update fitted model param
+            emission_line_objs[i].update_fitted_model(all_fitted_models[i])
+
             # Iterate through that group
             for j, rest_wavelength in enumerate(rest_candidates[i]):
-                print(rest_candidates[i])
                 u_rest_lam = rest_wavelength * u.AA
                 u_obs_lam = obs_candidates[i][j] * u.AA
                 group_doppler.append(u_obs_lam.to(u.km/u.s,  equivalencies=u.doppler_optical(u_rest_lam)))
@@ -204,36 +211,6 @@ def doppler_shift_calc(grouped_lines, w, f, flux_range, peak_width, star_name, d
         f.write(f"{doppler_shift.value:.3f}\n")
     
     return doppler_shift
-
-    
-"""
-    Gaussian fit function
-    Name:       gaussian()
-    Parameters: 
-                x: data that will be fit
-                amp: amplitude of the gaussian fit
-                mu: mean of the gaussian fit
-                sigma: standard deviation of gaussian fit
-    Returns:
-                None
-"""
-def gaussian(x, amp, mu, sigma):
-    return amp * norm.pdf(x, mu, sigma)
-
-
-"""
-    Calculate the integral of the Gaussian function over a specified range
-    Name: gaussian_integral()
-    Parameters:
-        amp: amplitude of the gaussian fit
-        mu: mean of the gaussian fit
-        sigma: standard deviation of the gaussian fit
-        x_min: 'a' value (lower value)
-        x_max: 'b' value (upper value)
-"""
-def gaussian_integral(amp, mu, sigma, x_min, x_max):
-    integrand = lambda x: amp * norm.pdf(x, mu, sigma)
-    return quad(integrand, x_min, x_max)[0]
 
 
 """

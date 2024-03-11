@@ -16,6 +16,7 @@ from emission_lines import *
 import os
 from scipy.integrate import simps
 
+# MAYBE ADD DEF MAIN!!!
 
 # Pull spectra information
 filename = sys.argv[1]
@@ -56,45 +57,40 @@ if fresh_start:
         os.remove(noise_filename)
         os.remove(emission_line_filename)
 
-# Check if doppler file exists
+# Check if doppler file exists 
 doppler_found = exists(doppler_filename)
 if doppler_found:
     doppler_shift = np.loadtxt(doppler_filename)*(u.km/u.s)
 else:
     doppler_shift = doppler_shift_calc(grouped_lines, wavelength_data, flux_data, flux_range, peak_width, doppler_filename)
 
-# Check if noise file exists 
-noise_found = exists(noise_filename)
-if noise_found:
-    noise_bool_list = np.loadtxt(noise_filename)
-
 # Check if emission line file exists
 emission_line_found = exists(emission_line_filename)
 if emission_line_found:
-    # Load class data! -> UPDATE ME!
+    # Load class data! -> UPDATE ME! and go straight to making the final plot ! (should store flux calc? maybe)
+    # emission_line_list = loaded data
     print("wow")
+# Calculate emission lines
+else:
+    for index, line in enumerate(emission_line_list):
+        # Define necessary variables
+        group_wavelength_data = wavelength_data[line.flux_mask]
+        group_flux_data = flux_data[line.flux_mask]
 
-# Initialize necessary variables
-flux = defaultdict(list)    
-for index, line in enumerate(emission_line_list):
-    # Calculate obs_lam for each emission line
-    rest_lam = line.wavelength_group[len(line.wavelength_group) - 1] * u.AA
-    line.obs_lam = doppler_shift.to(u.AA,  equivalencies=u.doppler_optical(rest_lam))
+        # Necessary emission line info
+        rest_lam = line.wavelength_group[len(line.wavelength_group) - 1] * u.AA
+        line.obs_lam = doppler_shift.to(u.AA,  equivalencies=u.doppler_optical(rest_lam))
+        w0,w1 = wavelength_edges(group_wavelength_data)
+        sumerror = (np.sum(error_data[line.flux_mask]**2 * (w1-w0)**2))**0.5
 
-    # Check if noise has been calculated yet
-    if not noise_found:
-        # If has a voigt fit is not noise
-        if line.fitted_model:
+        # If was used for doppler calculation, then not noise
+        if line.doppler_candidate:
             noise_bool_list.append(False)
             
             # Calculate continuum and total flux
-            continuum = [min(line.fitted_model(wavelength_data[line.flux_mask])) for _ in range(len(wavelength_data[line.flux_mask]))]
-            total_sumflux = simps(line.fitted_model(wavelength_data[line.flux_mask]), x = wavelength_data[line.flux_mask])            
+            continuum = [min(line.fitted_model(group_wavelength_data)) for _ in range(len(group_wavelength_data))]
+            total_sumflux = np.sum((line.fitted_model(group_wavelength_data))*(w1-w0)) 
         else:
-            # Calculate continuum
-            continuum = []
-            continuum = split_create_trendline(wavelength_data[line.flux_mask], flux_data[line.flux_mask], peak_width_pixels)
-
             # Determine if noise plot
             sns.set_style("darkgrid")
             sns.set_theme(rc={'axes.facecolor':'#F8F5F2'})
@@ -105,44 +101,58 @@ for index, line in enumerate(emission_line_list):
             plt.xlabel('Wavelength (Å)', fontsize =12)
             plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ Å$^{-1}$)', fontsize=12)
             cid = fig.canvas.mpl_connect('key_press_event', lambda event: on_key(event, 'Noise Detection'))
-            
+
+            # Check if a fit was successful
+            if line.fitted_model:
+                voigt_fit, = plt.plot(group_wavelength_data, line.fitted_model(group_wavelength_data), color = "#111D4A") # Change color!
+                continuum = [min(line.fitted_model(group_wavelength_data)) for _ in range(len(group_wavelength_data))]
+                total_sumflux = np.sum((line.fitted_model(group_wavelength_data))*(w1-w0)) 
+            else:
+                continuum = split_create_trendline(group_wavelength_data, group_flux_data, peak_width_pixels)
+                total_sumflux = np.sum(group_flux_data*(w1-w0))
+
             # Plot info
-            plt.plot(wavelength_data[line.flux_mask], flux_data[line.flux_mask], linewidth=1, color = '#4B3C30')
-            continuum_fit, = plt.plot(wavelength_data[line.flux_mask], continuum, color = "#DA667B")
+            plt.plot(group_wavelength_data, group_flux_data, linewidth=1, color = '#4B3C30')
+            continuum_fit, = plt.plot(group_wavelength_data, continuum, color = "#DA667B")
 
             # Plot all rest wavelengths
             for wavelength in line.wavelength_group:
                 rest_lam = plt.axvline(x=wavelength, color = "#71816D", linewidth = 1, linestyle=((0, (5, 5))))
             obs_lam = plt.axvline(x = line.obs_lam.value, color = "#D7816A", linewidth = 1)
 
-            legend = plt.legend([rest_lam, obs_lam, continuum_fit], ["Rest Wavelength", "Observed Wavelength", "Continuum"])
+            # Plot legend
+            if line.fitted_model:
+                legend = plt.legend([rest_lam, obs_lam, voigt_fit, continuum_fit], ["Rest Wavelength", "Observed Wavelength", "Voigt Fit", "Continuum"])
+            else:
+                legend = plt.legend([rest_lam, obs_lam, continuum_fit], ["Rest Wavelength", "Observed Wavelength", "Continuum"])
+                
             legend.get_frame().set_facecolor('white')
             plt.show()
 
-            # Calculate flux -> can maybe try voigt fit again or do gaussian?
-            total_sumflux = [0] # CHANGE ME
-
-
-        # Calculate edges and error
-        w0,w1 = wavelength_edges(wavelength_data[line.flux_mask])
-        sumerror = (np.sum(error_data[line.flux_mask]**2 * (w1-w0)**2))**0.5
-
-        # If noise
+        # Check if noise
         if noise_bool_list[index]:
             total_flux = sumerror * (-3)
             sumerror = 0
-        # Calculate flux normally
         else:
-            print('AHHHH UPDATE ME TO THE COMMENT')
-            # total_flux = total_sumflux - continuum
+            continuum_sumflux = np.sum(continuum*(w1-w0))
+            total_flux = total_sumflux - continuum_sumflux
         
         # Update parameters
-        line.noise_bool = noise_bool_list[index]
+        line.noise_bool = noise_bool_list[index]    
         line.continuum = continuum
-        
+        line.update_flux_error(total_flux, sumerror)
 
-        print(noise_bool_list[index])
+        print(f"Line: {line.obs_lam}, Flux: {line.flux_error[0]}, Error: {line.flux_error[1]}")
 
+# # Create a basic plot
+# sns.set_theme()
+# plt.title("Flux vs Wavelength for " + star_name)
+# plt.xlabel('Wavelength (\AA)')
+# plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ \AA$^{-1}$)')
+# plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ \AA$^{-1}$)')
+
+# # Plot emission lines
+# for line in emission_line_list:
 sys.exit()
 
 

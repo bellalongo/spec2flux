@@ -2,7 +2,6 @@
 import astropy.io.fits as fits
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from scipy.signal import find_peaks
 import astropy.units as u
 import numpy as np
 import pandas as pd
@@ -14,8 +13,7 @@ from astropy.table import Table
 from flux_calc import *
 from emission_lines import *
 import os
-from scipy.integrate import simps
-
+import json
 # MAYBE ADD DEF MAIN!!!
 
 # Pull spectra information
@@ -41,8 +39,7 @@ rest_lam_data = pd.DataFrame(data)
 
 # Filenames
 doppler_filename = "./doppler/" + star_name + "_doppler.txt"
-noise_filename = "./noise/" + star_name + "_noise.txt"
-emission_line_filename = "./emission_lines" + star_name + "_lines.txt"
+emission_line_filename = "./emission_lines/" + star_name + "_lines.json"
 
 # Group emission lines
 grouped_lines = grouping_emission_lines(1160, rest_lam_data)
@@ -52,9 +49,8 @@ peak_width, peak_width_pixels, flux_range = peak_width_finder(grating, wavelengt
 
 # Delete existing data if fresh start
 if fresh_start:
-    if any(exists([doppler_filename, noise_filename, emission_line_filename])):
+    if exists(doppler_filename) or exists(emission_line_filename):
         os.remove(doppler_filename)
-        os.remove(noise_filename)
         os.remove(emission_line_filename)
 
 # Check if doppler file exists 
@@ -67,11 +63,20 @@ else:
 # Check if emission line file exists
 emission_line_found = exists(emission_line_filename)
 if emission_line_found:
-    # Load class data! -> UPDATE ME! and go straight to making the final plot ! (should store flux calc? maybe)
-    # emission_line_list = loaded data
-    print("wow")
+    # Read emission_line data from JSON file
+    with open(emission_line_filename, "r") as json_file:
+        emission_line_data = json.load(json_file)
+
+    # Reconstruct emission_line objects from dictionaries
+    emission_line_list = []
+    for data in emission_line_data:
+        emission_line_obj = emission_line(**data)
+        emission_line_list.append(emission_line_obj)
+
 # Calculate emission lines
 else:
+    emission_line_data = [] # used later for json 
+
     for index, line in enumerate(emission_line_list):
         # Define necessary variables
         group_wavelength_data = wavelength_data[line.flux_mask]
@@ -79,7 +84,7 @@ else:
 
         # Necessary emission line info
         rest_lam = line.wavelength_group[len(line.wavelength_group) - 1] * u.AA
-        line.obs_lam = doppler_shift.to(u.AA,  equivalencies=u.doppler_optical(rest_lam))
+        line.obs_lam = doppler_shift.to(u.AA,  equivalencies=u.doppler_optical(rest_lam)).value
         w0,w1 = wavelength_edges(group_wavelength_data)
         sumerror = (np.sum(error_data[line.flux_mask]**2 * (w1-w0)**2))**0.5
 
@@ -104,7 +109,7 @@ else:
 
             # Check if a fit was successful
             if line.fitted_model:
-                voigt_fit, = plt.plot(group_wavelength_data, line.fitted_model(group_wavelength_data), color = "#111D4A") # Change color!
+                voigt_fit, = plt.plot(group_wavelength_data, line.fitted_model(group_wavelength_data), color = "#8B85C1") # Change color! (later)
                 continuum = [min(line.fitted_model(group_wavelength_data)) for _ in range(len(group_wavelength_data))]
                 total_sumflux = np.sum((line.fitted_model(group_wavelength_data))*(w1-w0)) 
             else:
@@ -118,14 +123,14 @@ else:
             # Plot all rest wavelengths
             for wavelength in line.wavelength_group:
                 rest_lam = plt.axvline(x=wavelength, color = "#71816D", linewidth = 1, linestyle=((0, (5, 5))))
-            obs_lam = plt.axvline(x = line.obs_lam.value, color = "#D7816A", linewidth = 1)
+            obs_lam = plt.axvline(x = line.obs_lam, color = "#D7816A", linewidth = 1)
 
             # Plot legend
             if line.fitted_model:
                 legend = plt.legend([rest_lam, obs_lam, voigt_fit, continuum_fit], ["Rest Wavelength", "Observed Wavelength", "Voigt Fit", "Continuum"])
             else:
                 legend = plt.legend([rest_lam, obs_lam, continuum_fit], ["Rest Wavelength", "Observed Wavelength", "Continuum"])
-                
+
             legend.get_frame().set_facecolor('white')
             plt.show()
 
@@ -141,18 +146,41 @@ else:
         line.noise_bool = noise_bool_list[index]    
         line.continuum = continuum
         line.update_flux_error(total_flux, sumerror)
+        emission_line_data.append(emission_line_to_dict(line))
 
-        print(f"Line: {line.obs_lam}, Flux: {line.flux_error[0]}, Error: {line.flux_error[1]}")
+# Save emission line list information to json
+with open(emission_line_filename, "w") as json_file:
+    json.dump(emission_line_data, json_file, indent=4)
 
-# # Create a basic plot
-# sns.set_theme()
-# plt.title("Flux vs Wavelength for " + star_name)
-# plt.xlabel('Wavelength (\AA)')
-# plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ \AA$^{-1}$)')
-# plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ \AA$^{-1}$)')
+# Create a basic plot
+fig = plt.figure(figsize=(14,7))
+plt.title("Flux vs Wavelength for " + star_name)
+plt.xlabel('Wavelength (\AA)')
+plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ \AA$^{-1}$)')
+plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ \AA$^{-1}$)')
 
-# # Plot emission lines
-# for line in emission_line_list:
+# Plot emission lines
+for line in emission_line_list:
+    if line.noise_bool:
+        line_color = 'darkgreen'
+    else:
+        line_color = 'yellowgreen'
+    
+    # Plot rest wavelengths
+    for curr_rest in line.wavelength_group:
+        rest_lam = plt.axvline(x=line.obs_lam, color= "purple", alpha=0.5)
+
+    obs_lam = plt.axvline(x=line.obs_lam, color= line_color, alpha=0.5)
+    trendline, = plt.plot(wavelength_data[line.flux_mask], line.continuum, color="darkorange", alpha=0.7)
+
+# Plot details
+plt.plot(wavelength_data, flux_data)
+legend = plt.legend([rest_lam, obs_lam, trendline], ["Rest Wavelength", "Observed Wavelength", "Continuum"])
+plt.show()
+
+# Save to file
+
+
 sys.exit()
 
 

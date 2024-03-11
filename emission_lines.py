@@ -35,6 +35,23 @@ class emission_line:
         self.flux_error = [new_flux, new_error]
 
 
+"""
+    WILL ONLY SAVE IMPORTANT DATA (no fitted_model)
+"""
+def emission_line_to_dict(emission_line_obj):
+    return {
+        "wavelength_group": emission_line_obj.wavelength_group,
+        "ion": emission_line_obj.ion,
+        "obs_lam": emission_line_obj.obs_lam,
+        "flux_mask": emission_line_obj.flux_mask.tolist(),
+        "noise_bool": emission_line_obj.noise_bool,
+        "blended_bool": emission_line_obj.blended_bool,
+        "doppler_candidate": None,
+        "fitted_model": None,
+        "continuum": emission_line_obj.continuum,
+        "flux_error": emission_line_obj.flux_error
+    }
+
 
 """
     Finds the average width of a peak based off of the grating
@@ -207,7 +224,6 @@ def doppler_shift_calc(grouped_lines, w, f, flux_range, peak_width, doppler_file
         if boolean:
             # Set as doppler candidate
             emission_line_objs[i].update_doppler_candidate(True)
-            print(emission_line_objs[i].fitted_model)
 
             # Iterate through that group
             for j, rest_wavelength in enumerate(rest_candidates[i]):

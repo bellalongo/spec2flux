@@ -13,11 +13,10 @@ doppler_bool_list = []
 emission_line_list = []
 
 class emission_line:
-    def __init__(self, wavelength_group, ion, obs_lam, flux_mask, noise_bool, blended_bool, doppler_candidate, fitted_model, continuum, flux_error):
+    def __init__(self, wavelength_group, ion, obs_lam, noise_bool, blended_bool, doppler_candidate, fitted_model, continuum, flux_error):
         self.wavelength_group = wavelength_group
         self.ion = ion
         self.obs_lam = obs_lam
-        self.flux_mask = flux_mask
         self.noise_bool = noise_bool
         self.blended_bool = blended_bool
         self.doppler_candidate = doppler_candidate
@@ -36,14 +35,13 @@ class emission_line:
 
 
 """
-    WILL ONLY SAVE IMPORTANT DATA (no fitted_model)
+    WILL ONLY SAVE IMPORTANT DATA (no fitted_model) to reduce memory usage
 """
 def emission_line_to_dict(emission_line_obj):
     return {
         "wavelength_group": emission_line_obj.wavelength_group,
         "ion": emission_line_obj.ion,
         "obs_lam": emission_line_obj.obs_lam,
-        "flux_mask": emission_line_obj.flux_mask.tolist(),
         "noise_bool": emission_line_obj.noise_bool,
         "blended_bool": emission_line_obj.blended_bool,
         "doppler_candidate": None,
@@ -90,7 +88,7 @@ def peak_width_finder(grating, wavelength_data):
 """
 def grouping_emission_lines(min_wavelength, rest_lam_data):
     # Initialize variables
-    tolerance = 10.
+    tolerance = 10. # adjust me!
     ion_groups = {}
     close_group_found = False
 
@@ -163,7 +161,6 @@ def doppler_shift_calc(grouped_lines, w, f, flux_range, peak_width, doppler_file
                 wavelength_group = group, 
                 ion = ion, 
                 obs_lam = None, 
-                flux_mask = group_mask, 
                 noise_bool = None, 
                 blended_bool = True if len(f[group_mask]) > 1 else False, 
                 doppler_candidate = None, 

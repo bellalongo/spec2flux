@@ -31,7 +31,7 @@ data = fits.getdata(filename)
 w, f , e = data['WAVELENGTH'], data['FLUX'], data['ERROR']
 mask = (w > 1160) # change if the spectra starts at a different wavelength
 wavelength_data, flux_data, error_data = w[mask], f[mask], e[mask]
-fresh_start = False # will delete all existing files for that star
+fresh_start = True # will delete all existing files for that star
 
 # Load Rest Lam data
 data = pd.read_csv("DEM_goodlinelist.csv")
@@ -79,14 +79,16 @@ else:
 
     for index, line in enumerate(emission_line_list):
         # Define necessary variables
-        group_wavelength_data = wavelength_data[line.flux_mask]
-        group_flux_data = flux_data[line.flux_mask]
+        group = line.wavelength_group
+        flux_mask = (wavelength_data > group[0] - peak_width) & (wavelength_data < group[len(group) - 1] + peak_width)
+        group_wavelength_data = wavelength_data[flux_mask]
+        group_flux_data = flux_data[flux_mask]
 
         # Necessary emission line info
         rest_lam = line.wavelength_group[len(line.wavelength_group) - 1] * u.AA
         line.obs_lam = doppler_shift.to(u.AA,  equivalencies=u.doppler_optical(rest_lam)).value
         w0,w1 = wavelength_edges(group_wavelength_data)
-        sumerror = (np.sum(error_data[line.flux_mask]**2 * (w1-w0)**2))**0.5
+        sumerror = (np.sum(error_data[flux_mask]**2 * (w1-w0)**2))**0.5
 
         # If was used for doppler calculation, then not noise
         if line.doppler_candidate:
@@ -144,7 +146,7 @@ else:
         
         # Update parameters
         line.noise_bool = noise_bool_list[index]    
-        line.continuum = continuum
+        line.continuum = continuum[0] # only need to store 1 value
         line.update_flux_error(total_flux, sumerror)
         emission_line_data.append(emission_line_to_dict(line))
 
@@ -153,29 +155,37 @@ with open(emission_line_filename, "w") as json_file:
     json.dump(emission_line_data, json_file, indent=4)
 
 # Create a basic plot
+sns.set_style("darkgrid")
+sns.set_theme(rc={'axes.facecolor':'#F5F5F5'})
 fig = plt.figure(figsize=(14,7))
+ax = fig.add_subplot()
 plt.title("Flux vs Wavelength for " + star_name)
-plt.xlabel('Wavelength (\AA)')
-plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ \AA$^{-1}$)')
-plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ \AA$^{-1}$)')
+plt.xlabel('Wavelength (Å)')
+plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ Å$^{-1}$)')
+plt.plot(wavelength_data, flux_data, color = "#0D3B66")
 
 # Plot emission lines
 for line in emission_line_list:
-    if line.noise_bool:
-        line_color = 'darkgreen'
-    else:
-        line_color = 'yellowgreen'
-    
-    # Plot rest wavelengths
-    for curr_rest in line.wavelength_group:
-        rest_lam = plt.axvline(x=line.obs_lam, color= "purple", alpha=0.5)
+    # Create mask and continuum
+    group = line.wavelength_group
+    flux_mask = (wavelength_data > group[0] - peak_width) & (wavelength_data < group[len(group) - 1] + peak_width) # ADJUST ME IF ADJUST FLUX MASK CALC IN EL.PY!
+    continuum = [line.continuum for _ in range(len(wavelength_data[flux_mask]))]
 
-    obs_lam = plt.axvline(x=line.obs_lam, color= line_color, alpha=0.5)
-    trendline, = plt.plot(wavelength_data[line.flux_mask], line.continuum, color="darkorange", alpha=0.7)
+    if line.noise_bool:
+        # Plot rest wavelengths
+        for curr_rest in line.wavelength_group:
+            noisy_rest_lam = plt.axvline(x=curr_rest, color = '#6F96AE', linewidth = 1.5, linestyle=((0, (5, 5))))
+
+    else:
+        # Plot rest wavelengths
+        for curr_rest in line.wavelength_group:
+            rest_lam = plt.axvline(x=curr_rest, color = '#F3BAD3', linewidth = 1.5, linestyle=((0, (5, 5))))
+        obs_lam = plt.axvline(x = line.obs_lam, color = '#DE639A', linewidth = 1.5)
+
+    trendline, = plt.plot(wavelength_data[flux_mask], continuum, color="#EB6424")
 
 # Plot details
-plt.plot(wavelength_data, flux_data)
-legend = plt.legend([rest_lam, obs_lam, trendline], ["Rest Wavelength", "Observed Wavelength", "Continuum"])
+legend = plt.legend([noisy_rest_lam, rest_lam, obs_lam, trendline], ["Noise Wavelength", "Rest Wavelength", "Observed Wavelength", "Continuum"])
 plt.show()
 
 # Save to file

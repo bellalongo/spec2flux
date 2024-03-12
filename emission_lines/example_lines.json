@@ -1,0 +1,345 @@
+[
+    {
+        "wavelength_group": [
+            1174.935,
+            1175.265,
+            1175.592,
+            1175.713,
+            1175.713,
+            1175.989,
+            1176.372
+        ],
+        "ion": "C III",
+        "obs_lam": 1176.3402553160006,
+        "noise_bool": false,
+        "blended_bool": true,
+        "doppler_candidate": null,
+        "fitted_model": null,
+        "continuum": 1.850245530242188e-16,
+        "flux_error": [
+            1.4670252847568313e-14,
+            1.1791910115394032e-15
+        ]
+    },
+    {
+        "wavelength_group": [
+            1206.499
+        ],
+        "ion": "Si III",
+        "obs_lam": 1206.466442331592,
+        "noise_bool": false,
+        "blended_bool": false,
+        "doppler_candidate": null,
+        "fitted_model": null,
+        "continuum": 2.0568399792533042e-16,
+        "flux_error": [
+            3.085698422280182e-14,
+            8.772684858998067e-16
+        ]
+    },
+    {
+        "wavelength_group": [
+            1294.543,
+            1296.726,
+            1298.892,
+            1298.944,
+            1301.147,
+            1303.323
+        ],
+        "ion": "Si III",
+        "obs_lam": 1303.2878295124467,
+        "noise_bool": false,
+        "blended_bool": true,
+        "doppler_candidate": null,
+        "fitted_model": null,
+        "continuum": 8.573302049587814e-17,
+        "flux_error": [
+            1.8154308290207126e-14,
+            5.60515652642787e-16
+        ]
+    },
+    {
+        "wavelength_group": [
+            1218.39
+        ],
+        "ion": "O V",
+        "obs_lam": 1218.3571214500703,
+        "noise_bool": true,
+        "blended_bool": false,
+        "doppler_candidate": null,
+        "fitted_model": null,
+        "continuum": 3.182041449584721e-14,
+        "flux_error": [
+            -2.3295578368755585e-15,
+            0
+        ]
+    },
+    {
+        "wavelength_group": [
+            1371.292
+        ],
+        "ion": "O V",
+        "obs_lam": 1371.254995352481,
+        "noise_bool": false,
+        "blended_bool": false,
+        "doppler_candidate": null,
+        "fitted_model": null,
+        "continuum": 6.295600412177418e-16,
+        "flux_error": [
+            2.9124899753216485e-16,
+            1.2089965055708602e-16
+        ]
+    },
+    {
+        "wavelength_group": [
+            1238.821,
+            1242.804
+        ],
+        "ion": "N V",
+        "obs_lam": 1242.7704626323534,
+        "noise_bool": true,
+        "blended_bool": true,
+        "doppler_candidate": null,
+        "fitted_model": null,
+        "continuum": 7.21515935911291e-16,
+        "flux_error": [
+            -1.1341906351718008e-15,
+            0
+        ]
+    },
+    {
+        "wavelength_group": [
+            1253.811,
+            1259.519
+        ],
+        "ion": "S II",
+        "obs_lam": 1259.4850115740205,
+        "noise_bool": false,
+        "blended_bool": true,
+        "doppler_candidate": null,
+        "fitted_model": null,
+        "continuum": 4.701339965029236e-17,
+        "flux_error": [
+            6.8250345179871445e-15,
+            3.1087723709822864e-16
+        ]
+    },
+    {
+        "wavelength_group": [
+            1260.417,
+            1264.737,
+            1265.001
+        ],
+        "ion": "Si II",
+        "obs_lam": 1264.9668636409197,
+        "noise_bool": true,
+        "blended_bool": true,
+        "doppler_candidate": null,
+        "fitted_model": null,
+        "continuum": 4.0226156900982975e-17,
+        "flux_error": [
+            -1.2086277172756983e-15,
+            0
+        ]
+    },
+    {
+        "wavelength_group": [
+            1304.369
+        ],
+        "ion": "Si II",
+        "obs_lam": 1304.3338012858826,
+        "noise_bool": false,
+        "blended_bool": false,
+        "doppler_candidate": null,
+        "fitted_model": null,
+        "continuum": 3.9122652367078965e-15,
+        "flux_error": [
+            3.158999321776302e-14,
+            5.549173965124861e-16
+        ]
+    },
+    {
+        "wavelength_group": [
+            1526.706,
+            1533.43
+        ],
+        "ion": "Si II",
+        "obs_lam": 1533.38862001919,
+        "noise_bool": false,
+        "blended_bool": true,
+        "doppler_candidate": null,
+        "fitted_model": null,
+        "continuum": 2.1398354097923818e-17,
+        "flux_error": [
+            2.195836468967819e-14,
+            7.400744910401249e-16
+        ]
+    },
+    {
+        "wavelength_group": [
+            1323.907,
+            1323.952
+        ],
+        "ion": "C II",
+        "obs_lam": 1323.9162728338736,
+        "noise_bool": true,
+        "blended_bool": true,
+        "doppler_candidate": null,
+        "fitted_model": null,
+        "continuum": 2.786519644537734e-16,
+        "flux_error": [
+            -4.299443381480441e-16,
+            0
+        ]
+    },
+    {
+        "wavelength_group": [
+            1334.524,
+            1335.709
+        ],
+        "ion": "C II",
+        "obs_lam": 1335.6729555683744,
+        "noise_bool": false,
+        "blended_bool": true,
+        "doppler_candidate": null,
+        "fitted_model": null,
+        "continuum": 1.1286689596365318e-15,
+        "flux_error": [
+            6.337210065333229e-14,
+            7.27348861040841e-16
+        ]
+    },
+    {
+        "wavelength_group": [
+            1354.08
+        ],
+        "ion": "Fe XXI",
+        "obs_lam": 1354.0434598224795,
+        "noise_bool": false,
+        "blended_bool": false,
+        "doppler_candidate": null,
+        "fitted_model": null,
+        "continuum": 1.1939070948814811e-17,
+        "flux_error": [
+            4.808249682386355e-16,
+            1.2508696097202497e-16
+        ]
+    },
+    {
+        "wavelength_group": [
+            1393.755,
+            1402.77
+        ],
+        "ion": "Si IV",
+        "obs_lam": 1402.7321459110094,
+        "noise_bool": false,
+        "blended_bool": true,
+        "doppler_candidate": null,
+        "fitted_model": null,
+        "continuum": 2.061059380291843e-17,
+        "flux_error": [
+            2.880501614930782e-14,
+            5.608016266084737e-16
+        ]
+    },
+    {
+        "wavelength_group": [
+            1399.779,
+            1401.171,
+            1407.383
+        ],
+        "ion": "O IV",
+        "obs_lam": 1407.3450214280847,
+        "noise_bool": true,
+        "blended_bool": true,
+        "doppler_candidate": null,
+        "fitted_model": null,
+        "continuum": 1.6863693461345205e-17,
+        "flux_error": [
+            -1.4667718597875304e-15,
+            0
+        ]
+    },
+    {
+        "wavelength_group": [
+            1404.818,
+            1406.016
+        ],
+        "ion": "S IV",
+        "obs_lam": 1405.9780583169115,
+        "noise_bool": false,
+        "blended_bool": true,
+        "doppler_candidate": null,
+        "fitted_model": null,
+        "continuum": 3.0629972106056947e-16,
+        "flux_error": [
+            2.455577277188233e-15,
+            2.6501830019766885e-16
+        ]
+    },
+    {
+        "wavelength_group": [
+            1486.496
+        ],
+        "ion": "N IV",
+        "obs_lam": 1486.455886544574,
+        "noise_bool": true,
+        "blended_bool": false,
+        "doppler_candidate": null,
+        "fitted_model": null,
+        "continuum": 1.2907490382178124e-15,
+        "flux_error": [
+            -3.9533557972864766e-16,
+            0
+        ]
+    },
+    {
+        "wavelength_group": [
+            1548.201,
+            1550.772
+        ],
+        "ion": "C IV",
+        "obs_lam": 1550.73015204111,
+        "noise_bool": false,
+        "blended_bool": true,
+        "doppler_candidate": null,
+        "fitted_model": null,
+        "continuum": 9.773252139708427e-16,
+        "flux_error": [
+            6.489827695760116e-14,
+            9.847218830234585e-16
+        ]
+    },
+    {
+        "wavelength_group": [
+            1640.42
+        ],
+        "ion": "He II",
+        "obs_lam": 1640.375732868067,
+        "noise_bool": false,
+        "blended_bool": false,
+        "doppler_candidate": null,
+        "fitted_model": null,
+        "continuum": 7.668845016695228e-16,
+        "flux_error": [
+            2.3479360190235192e-14,
+            7.033859060520365e-16
+        ]
+    },
+    {
+        "wavelength_group": [
+            1666.142
+        ],
+        "ion": "O III",
+        "obs_lam": 1666.0970387536527,
+        "noise_bool": true,
+        "blended_bool": false,
+        "doppler_candidate": null,
+        "fitted_model": null,
+        "continuum": 1.1208396193950318e-14,
+        "flux_error": [
+            -1.5705772134682809e-15,
+            0
+        ]
+    }
+]

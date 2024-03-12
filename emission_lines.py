@@ -162,7 +162,7 @@ def doppler_shift_calc(grouped_lines, w, f, flux_range, peak_width, doppler_file
                 ion = ion, 
                 obs_lam = None, 
                 noise_bool = None, 
-                blended_bool = True if len(f[group_mask]) > 1 else False, 
+                blended_bool = True if len(group) > 1 else False, 
                 doppler_candidate = None, 
                 fitted_model= None,
                 continuum = None,

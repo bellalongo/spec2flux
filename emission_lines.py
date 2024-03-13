@@ -139,6 +139,10 @@ def doppler_shift_calc(grouped_lines, w, f, peak_width, doppler_filename):
         for group in grouped_lines[ion]:
             voigt_profiles = []
             group_mask = (w > group[0] - peak_width) & (w < group[len(group) - 1] + peak_width) 
+
+            # Check if data is valid
+            if not any(f[group_mask]):
+                continue
             for wavelength in group:
                 # Intialize parameters
                 wavelength_mask = (w > wavelength - peak_width/2) & (w < wavelength + peak_width/2) 

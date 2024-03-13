@@ -29,7 +29,7 @@ data = fits.getdata(filename)
 w, f , e = data['WAVELENGTH'], data['FLUX'], data['ERROR']
 mask = (w > 1160) # change if the spectra starts at a different wavelength
 wavelength_data, flux_data, error_data = w[mask], f[mask], e[mask]
-fresh_start = True # will delete all existing files for that star
+fresh_start = False # will delete all existing files for that star
 
 # Load Rest Lam data
 data = pd.read_csv("DEM_goodlinelist.csv")
@@ -113,7 +113,7 @@ else:
 
             # Check if a fit was successful
             if line.fitted_model:
-                voigt_fit, = plt.plot(group_wavelength_data, line.fitted_model(group_wavelength_data), color = "#8B85C1") # Change color! (later)
+                voigt_fit, = plt.plot(group_wavelength_data, line.fitted_model(group_wavelength_data), color = "#231651") # Change color! (later)
                 continuum = [min(line.fitted_model(group_wavelength_data)) for _ in range(len(group_wavelength_data))]
                 total_sumflux = np.sum((line.fitted_model(group_wavelength_data))*(w1-w0)) 
             else:
@@ -189,6 +189,8 @@ for line in emission_line_list:
 # Plot details
 legend = plt.legend([noisy_rest_lam, rest_lam, obs_lam, trendline], 
                     ["Noise Wavelength", "Rest Wavelength", "Observed Wavelength", "Continuum"])
+plot_name = "./plots/" + star_name + "_final_plot.png"
+plt.savefig(plot_name)
 plt.show()
 
 # Check if calculations have already been stored

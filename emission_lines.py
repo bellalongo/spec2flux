@@ -6,6 +6,7 @@ import astropy.units as u
 from astropy.modeling.models import Voigt1D
 from astropy.modeling import fitting
 import seaborn as sns
+from astropy.modeling.fitting import NonFiniteValueError
 
 
 noise_bool_list = []
@@ -131,21 +132,21 @@ def grouping_emission_lines(min_wavelength, rest_lam_data):
     Returns:
                 doppler_shift: doppler shift of the spectra
 """
-def doppler_shift_calc(grouped_lines, w, f, flux_range, peak_width, doppler_filename):
+def doppler_shift_calc(grouped_lines, w, f, peak_width, doppler_filename):
     rest_candidates, obs_candidates, emission_line_objs = [], [], []
     # Iterate through groups
     for ion in grouped_lines:
         for group in grouped_lines[ion]:
             voigt_profiles = []
-            group_mask = (w > group[0] - peak_width) & (w < group[len(group) - 1] + peak_width) # maybe change to flux range?
+            group_mask = (w > group[0] - peak_width) & (w < group[len(group) - 1] + peak_width) 
             for wavelength in group:
                 # Intialize parameters
-                wavelength_mask = (w > wavelength - peak_width/2) & (w < wavelength + peak_width/2) # maybe change to peak width?
+                wavelength_mask = (w > wavelength - peak_width/2) & (w < wavelength + peak_width/2) 
 
                 init_x0 = wavelength
                 init_amp = np.max(f[wavelength_mask]) 
-                init_fwhm_g = 0.1
-                init_fwhm_l = 0.1
+                init_fwhm_g = peak_width/5
+                init_fwhm_l = peak_width/5
 
                 # Voigt distributions
                 voigt_profile = Voigt1D(x_0 = init_x0, amplitude_L = init_amp, fwhm_L = init_fwhm_l, fwhm_G = init_fwhm_g)
@@ -175,7 +176,7 @@ def doppler_shift_calc(grouped_lines, w, f, flux_range, peak_width, doppler_file
                 fitted_model = fitter(composite_model, w[group_mask], f[group_mask])
                 group_emission_line_obj.fitted_model = fitted_model
                 emission_line_objs.append(group_emission_line_obj)
-            except RuntimeError:
+            except (RuntimeError, TypeError, NonFiniteValueError):
                 continue
 
             # Basic plot

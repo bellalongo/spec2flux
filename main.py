@@ -1,20 +1,18 @@
 # Necessary imports
 import astropy.io.fits as fits
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 import astropy.units as u
 import numpy as np
 import pandas as pd
 import sys
 from os.path import exists
 from datetime import date
-from collections import defaultdict
 from astropy.table import Table
 from flux_calc import *
 from emission_lines import *
 import os
 import json
-# MAYBE ADD DEF MAIN!!!
+
 
 # Pull spectra information
 filename = sys.argv[1]
@@ -62,7 +60,7 @@ doppler_found = exists(doppler_filename)
 if doppler_found:
     doppler_shift = np.loadtxt(doppler_filename)*(u.km/u.s)
 else:
-    doppler_shift = doppler_shift_calc(grouped_lines, wavelength_data, flux_data, flux_range, peak_width, doppler_filename)
+    doppler_shift = doppler_shift_calc(grouped_lines, wavelength_data, flux_data, peak_width, doppler_filename)
 
 # Check if emission line file exists
 emission_line_found = exists(emission_line_filename)

@@ -1,4 +1,4 @@
-# Emission-Line-Flux-Calc 
+# fluxpal
 
 ### Description:
 Given a fits spectra file, the script will find the emission lines and calculate the flux for each emission line. The data is outputted as a .fits file, which can be used for analysis. 

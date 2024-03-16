@@ -77,13 +77,14 @@ Header contains:
 * WIDTHPXL: average emission line peak width in pixels
 * UPPRLIMIT: upper limit used for noise
 
-   
+
+### Using the data:
+ECSV Data: File columns are Ion, Rest Wavelength, Flux, Error, Blended Line, each row representing a grouped emission line.  <br />
+FITS Data: FITS Table containing the same data as the ECSV file. <br />
+Note: Noise is marked as having the negative of the upper limit (3*error) as the flux and an error of 0. <br />
 
 
   
-
-
-
 
 
 

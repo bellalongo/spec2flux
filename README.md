@@ -56,24 +56,24 @@ A plot will appear of the 'best' emission lines, with a Voigt fit fitted to it. 
 All lines not selected for Doppler calculation will appear, some with a Voigt profile fitted if possible to be selected as noise or not noise. Click 'y' if you think the line is noise, and 'n' if the line is not noise. </br>
 
 <div style="display:flex;">
-    <img src="https://github.com/bellalongo/Flux-and-Line-Measurement-Script/blob/main/not_noise.png?raw=true" alt="Not noise example" width="500"/>
-    <img src="https://github.com/bellalongo/Flux-and-Line-Measurement-Script/blob/main/noise.png?raw=true" alt="Noise example" width="500"/>
+    <img src="https://github.com/bellalongo/Flux-and-Line-Measurement-Script/blob/main/not_noise.png?raw=true" alt="Not noise example" width="475"/>
+    <img src="https://github.com/bellalongo/Flux-and-Line-Measurement-Script/blob/main/noise.png?raw=true" alt="Noise example" width="475"/>
 </div>
 
 
 ## Using the data:
 Header contains:
-* **DATE:** "date flux was calculated"
-* **FILENAME:** "name of the fits file used to for flux calc"
-* **TELESCP:** "telescope used to measure spectrum"
-* **INSTRMNT:** "active instrument to measure spectrum"
-* **GRATING:** "grating used to measure spectrum"
-* **TARGNAME:** "name of star used in measurement"
-* **DOPPLER:** "doppler shift used to measure flux"
-* **WIDTH:** "average peak width of the emissoin lines"
-* **RANGE:** "flux range used to isolate emission line"
-* **WIDTHPXL:** "average emission line peak width in pixels"
-* **UPPRLIMIT:** "upper limit used for noise"
+* DATE: date flux was calculated
+* FILENAME: name of the fits file used to for flux calc
+* TELESCP: telescope used to measure spectrum
+* INSTRMNT: active instrument to measure spectrum
+* GRATING: grating used to measure spectrum
+* TARGNAME: name of star used in measurement
+* DOPPLER: doppler shift used to measure flux
+* WIDTH: average peak width of the emissoin lines
+* RANGE: flux range used to isolate emission line
+* WIDTHPXL: average emission line peak width in pixels
+* UPPRLIMIT: upper limit used for noise
 
    
 

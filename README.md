@@ -55,10 +55,12 @@ A plot will appear of the 'best' emission lines, with a Voigt fit fitted to it. 
 ## Determining if noise
 All lines not selected for Doppler calculation will appear, some with a Voigt profile fitted if possible to be selected as noise or not noise. Click 'y' if you think the line is noise, and 'n' if the line is not noise. </br>
 
-<div style="display:flex;">
-    <img src="https://github.com/bellalongo/Flux-and-Line-Measurement-Script/blob/main/not_noise.png?raw=true" alt="Not noise example" width="475"/>
-    <img src="https://github.com/bellalongo/Flux-and-Line-Measurement-Script/blob/main/noise.png?raw=true" alt="Noise example" width="475"/>
-</div>
+**Not noise:**
+![Not noise example](https://github.com/bellalongo/Flux-and-Line-Measurement-Script/blob/main/not_noise.png?raw=true)
+</br>
+</br>
+**Noise:**
+![Not noise example](https://github.com/bellalongo/Flux-and-Line-Measurement-Script/blob/main/noise.png?raw=true)
 
 
 ## Using the data:

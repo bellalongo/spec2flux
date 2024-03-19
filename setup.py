@@ -8,8 +8,7 @@ setup(
         'matplotlib',
         'astropy',
         'seaborn',
-        'numpy',
-        'pandas'
+        'numpy'
     ],
     author='Bella Longo',
     author_email='bellalongo.mail@gmail.com',

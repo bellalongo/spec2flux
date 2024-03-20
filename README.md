@@ -49,18 +49,25 @@ The script can be run on its own without any adjustments, but if the star is a l
 ## Doppler shift calculation
 A plot will appear of the 'best' emission lines, with a Voigt fit fitted to it. Click 'y' if you think the line should be used to calculate Doppler shift (these lines will automatically not be considered as noise), and 'n' if the emission line if not. </br>
 
-![doppler calculation example](https://github.com/bellalongo/Flux-and-Line-Measurement-Script/blob/main/doppler_calc.png?raw=true)
+![doppler calculation example](https://github.com/bellalongo/Flux-and-Line-Measurement-Script/blob/main/readme_pics/doppler_calc.png?raw=true)
 </br>
 
 ## Determining if noise
 All lines not selected for Doppler calculation will appear, some with a Voigt profile fitted if possible to be selected as noise or not noise. Click 'y' if you think the line is noise, and 'n' if the line is not noise. </br>
 
 **Not noise:**
-![Not noise example](https://github.com/bellalongo/Flux-and-Line-Measurement-Script/blob/main/not_noise.png?raw=true)
+![Not noise example](https://github.com/bellalongo/Flux-and-Line-Measurement-Script/blob/main/readme_pics/not_noise.png?raw=true)
 </br>
 </br>
 **Noise:**
-![Not noise example](https://github.com/bellalongo/Flux-and-Line-Measurement-Script/blob/main/noise.png?raw=true)
+![Not noise example](https://github.com/bellalongo/Flux-and-Line-Measurement-Script/blob/main/readme_pics/noise.png?raw=true)
+
+## Final plot
+After all emission line selections and calculations have been made, a final plot will appear showing the spectrum and each labeled emission line. Matplotlib gives the ability to zoom into the plot, so please do so to double-check the lines. This plot is saved to the 'plots' folder. </br>
+
+![final plot example](https://github.com/bellalongo/Flux-and-Line-Measurement-Script/blob/main/plots/example_final_plot.png?raw=true)
+</br>
+
 
 
 ## Using the data:

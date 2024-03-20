@@ -29,7 +29,7 @@ data = fits.getdata(filename)
 w, f , e = data['WAVELENGTH'], data['FLUX'], data['ERROR']
 mask = (w > 1160) # change if the spectra starts at a different wavelength
 wavelength_data, flux_data, error_data = w[mask], f[mask], e[mask]
-fresh_start = False # will delete all existing files for that star
+fresh_start = False # will delete all existing files for that star (set to True if want to just see final plot)
 
 # Load Rest Lam data
 data = pd.read_csv("DEM_goodlinelist.csv")
@@ -40,6 +40,7 @@ doppler_filename = "./doppler/" + star_name + "_doppler.txt"
 emission_line_filename = "./emission_lines/" + star_name + "_lines.json"
 fits_filename = "./flux/" + star_name.lower() + ".fits"
 ecsv_filename = "./flux/" + star_name.lower() + ".ecsv"
+final_plot_filename = "./plots/" + star_name.lower() + "_final_plot.png"
 
 # Group emission lines
 grouped_lines = grouping_emission_lines(1160, rest_lam_data)
@@ -54,6 +55,7 @@ if fresh_start:
         os.remove(emission_line_filename)
         os.remove(fits_filename)
         os.remove(ecsv_filename)
+        os.remove(final_plot_filename)
 
 # Check if doppler file exists 
 doppler_found = exists(doppler_filename)
@@ -113,7 +115,7 @@ else:
 
             # Check if a fit was successful
             if line.fitted_model:
-                voigt_fit, = plt.plot(group_wavelength_data, line.fitted_model(group_wavelength_data), color = "#231651") # Change color! (later)
+                voigt_fit, = plt.plot(group_wavelength_data, line.fitted_model(group_wavelength_data), color = "#231651") 
                 continuum = [min(line.fitted_model(group_wavelength_data)) for _ in range(len(group_wavelength_data))]
                 total_sumflux = np.sum((line.fitted_model(group_wavelength_data))*(w1-w0)) 
             else:
@@ -189,8 +191,7 @@ for line in emission_line_list:
 # Plot details
 legend = plt.legend([noisy_rest_lam, rest_lam, obs_lam, trendline], 
                     ["Noise Wavelength", "Rest Wavelength", "Observed Wavelength", "Continuum"])
-plot_name = "./plots/" + star_name + "_final_plot.png"
-plt.savefig(plot_name)
+plt.savefig(final_plot_filename)
 plt.show()
 
 # Check if calculations have already been stored

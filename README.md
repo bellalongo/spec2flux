@@ -28,8 +28,12 @@ The script accomplishes the task of calculating flux by:
    git clone https://github.com/bellalongo/fluxpal.git
    ```
 2. Move the fits file being used to calculate flux into the 'spectra' folder.
-3. Adjust the 'fresh_start' parameter depending on whether you want to adjust calculations on a new run. (if first run, set to False)
-4. Run the script:
+3. Adjust the 'fresh_start' parameter depending on whether you want to adjust calculations on a new run </br>
+   (if first run, set to False)
+   ```sh
+   fresh_start = False
+   ```
+5. Run the script:
     ```sh
    python3 main.py spectra/fits_file.fits 'instrument' 'grating' 'star name'
    ```

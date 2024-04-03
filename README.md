@@ -29,9 +29,9 @@ The script accomplishes the task of calculating flux by:
    ```
 2. Move the fits file being used to calculate flux into the 'spectra' folder.
 3. Adjust the 'fresh_start' parameter depending on whether you want to adjust calculations on a new run </br>
-   (if first run, set to False)
+   (if first run, set to True)
    ```sh
-   fresh_start = False
+   fresh_start = True
    ```
 5. Run the script:
     ```sh

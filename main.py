@@ -29,7 +29,7 @@ data = fits.getdata(filename)
 w, f , e = data['WAVELENGTH'], data['FLUX'], data['ERROR']
 mask = (w > 1160) # change if the spectra starts at a different wavelength
 wavelength_data, flux_data, error_data = w[mask], f[mask], e[mask]
-fresh_start = False # will delete all existing files for that star (set to True if want to just see final plot)
+fresh_start = True # will delete all existing files for that star (set to True if want to just see final plot)
 
 # Load Rest Lam data
 data = pd.read_csv("DEM_goodlinelist.csv")

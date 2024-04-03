@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 
 """
     Creates "boxes" to be useed to measure the flux
@@ -37,7 +36,7 @@ def split_create_trendline(wavelength_data, flux_data, peak_width_pixels):
     flux_list_right = []
     
     # Make an array of all flux that aren't included in the peak
-    for i in range(0, peak_width_pixels):
+    for i in range(0, int(peak_width_pixels/2)):
         flux_list_left.append(flux_data[i])
         flux_list_right.append(flux_data[length-i])
         

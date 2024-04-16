@@ -30,6 +30,7 @@ w, f , e = data['WAVELENGTH'], data['FLUX'], data['ERROR']
 mask = (w > 1160) # change if the spectra starts at a different wavelength
 wavelength_data, flux_data, error_data = w[mask], f[mask], e[mask]
 fresh_start = True # will delete all existing files for that star (set to True if want to just see final plot)
+gaussian_smoothing = False
 
 # Load Rest Lam data
 data = pd.read_csv("DEM_goodlinelist.csv")
@@ -47,6 +48,12 @@ grouped_lines = grouping_emission_lines(1160, rest_lam_data)
 
 # Find the average width of the peaks
 peak_width, peak_width_pixels, flux_range = peak_width_finder(grating, wavelength_data)
+
+# Get airglow
+airglow_data = pd.read_csv("airglow.csv") 
+airglow_df = pd.DataFrame(airglow_data)
+airglow = airglow_df.loc[:, 'Central Wavelength'].values
+# sys.exit()
 
 # Delete existing data if fresh start
 if fresh_start:

@@ -53,6 +53,10 @@ peak_width, peak_width_pixels, flux_range = peak_width_finder(grating, wavelengt
 airglow_data = pd.read_csv("airglow.csv") 
 airglow_df = pd.DataFrame(airglow_data)
 
+# Smooth data if gaussian_smoothing
+if gaussian_smoothing:
+    wavelength_data, flux_data, error_data = smooth_data(wavelength_data, flux_data, error_data, 1) # adjust sigma as needed
+
 # Delete existing data if fresh start
 if fresh_start:
     if exists(doppler_filename) or exists(emission_line_filename):
@@ -109,7 +113,7 @@ else:
             total_sumflux = np.sum((line.fitted_model(group_wavelength_data))*(w1-w0)) 
         else:
             # Legend parameters and strings
-            legend_params = [], legend_strings = []
+            legend_params, legend_strings = [], []
 
             # Determine if noise plot
             sns.set_style("darkgrid")

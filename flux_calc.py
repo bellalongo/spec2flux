@@ -1,4 +1,6 @@
 import numpy as np
+import astropy.units as u
+from scipy.ndimage import gaussian_filter
 
 """
     Creates "boxes" to be useed to measure the flux
@@ -17,6 +19,28 @@ def wavelength_edges(wavelength_data):
     w1 = wavelength_data + diff1/2.
 
     return w0, w1
+
+
+"""
+    Smooths data using gaussian_filter
+    Name:       smooth_data()
+    Parameters: 
+                wavelength_data: masked wavelength data from the spectra  
+                flux_data: masked flux data from the spectra   
+                error_data: masked error data from the spectra  
+                sigma: standard deviation of the gaussian (controls how much neighboring data points contribute to smoothing)
+    Returns:
+                smoothed_wavelength: smoothed wavelength data
+                smoothed_flux: smoothed flux data
+                smoothed_error: smoothed error data
+"""
+def smooth_data(wavelength_data, flux_data, error_data, sigma):
+    # Smooth data
+    smoothed_wavelength = gaussian_filter(wavelength_data, sigma)
+    smoothed_flux = gaussian_filter(flux_data, sigma)
+    smoothed_error = gaussian_filter(error_data, sigma)
+
+    return smoothed_wavelength, smoothed_flux, smoothed_error
 
 
 """

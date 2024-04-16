@@ -16,6 +16,7 @@ The script accomplishes the task of calculating flux by:
 ## Prerequisites 
 * [![astropy][astropy-pic]][astropy-url]
 * [![matplotlib][matplotlib-pic]][matplotlib-url]
+* [![scipy][scipy-pic]][scipy-url]
 * [![seaborn][seaborn-pic]][seaborn-url]
 * [![numpy][numpy-pic]][numpy-url]
 * [![pandas][pandas-pic]][pandas-url]
@@ -32,6 +33,11 @@ The script accomplishes the task of calculating flux by:
    (if first run, set to True)
    ```sh
    fresh_start = True
+   ```
+3. Adjust the 'gaussian_smoothing' parameter depending on whether you to smooth the spectrum </br>
+   (if first run, set to False)
+   ```sh
+   gaussian_smoothing = False
    ```
 5. Run the script:
     ```sh
@@ -100,13 +106,16 @@ Note: Noise is marked as having the negative of the upper limit (3*error) as the
 
 
 
+
+[astropy-url]: https://astropy.org/
+[astropy-pic]: https://img.shields.io/badge/astropy-red?style=for-the-badge
+[matplotlib-url]: https://matplotlib.org/stable/index.html
+[matplotlib-pic]: https://img.shields.io/badge/matplotlib-orange?style=for-the-badge
+[scipy-url]: https://scipy.org/
+[scipy-pic]: https://img.shields.io/badge/scipy-yellow?style=for-the-badge
+[seaborn-url]: https://seaborn.pydata.org/
+[seaborn-pic]: https://img.shields.io/badge/seaborn-green?style=for-the-badge
 [numpy-url]: https://numpy.org/doc/
 [numpy-pic]: https://img.shields.io/badge/numpy-blue?style=for-the-badge
-[astropy-url]: https://astropy.org/
-[astropy-pic]: https://img.shields.io/badge/astropy-orange?style=for-the-badge
-[matplotlib-url]: https://matplotlib.org/stable/index.html
-[matplotlib-pic]: https://img.shields.io/badge/matplotlib-yellow?style=for-the-badge
-[seaborn-url]: https://seaborn.pydata.org/
-[seaborn-pic]: https://img.shields.io/badge/seaborn-purple?style=for-the-badge
 [pandas-url]: https://pandas.pydata.org/docs/
-[pandas-pic]: https://img.shields.io/badge/pandas-black?style=for-the-badge
+[pandas-pic]: https://img.shields.io/badge/pandas-purple?style=for-the-badge

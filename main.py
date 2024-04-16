@@ -52,8 +52,6 @@ peak_width, peak_width_pixels, flux_range = peak_width_finder(grating, wavelengt
 # Get airglow
 airglow_data = pd.read_csv("airglow.csv") 
 airglow_df = pd.DataFrame(airglow_data)
-airglow = airglow_df.loc[:, 'Central Wavelength'].values
-# sys.exit()
 
 # Delete existing data if fresh start
 if fresh_start:
@@ -94,6 +92,7 @@ else:
         flux_mask = (wavelength_data > group[0] - peak_width) & (wavelength_data < group[len(group) - 1] + peak_width)
         group_wavelength_data = wavelength_data[flux_mask]
         group_flux_data = flux_data[flux_mask]
+        group_airglow = airglow_df[(airglow_df['Central Wavelength'] >= np.min(group_wavelength_data)) & (airglow_df['Central Wavelength'] <= np.max(group_wavelength_data))]
 
         # Necessary emission line info
         rest_lam = line.wavelength_group[len(line.wavelength_group) - 1] * u.AA
@@ -109,6 +108,9 @@ else:
             continuum = [min(line.fitted_model(group_wavelength_data)) for _ in range(len(group_wavelength_data))]
             total_sumflux = np.sum((line.fitted_model(group_wavelength_data))*(w1-w0)) 
         else:
+            # Legend parameters and strings
+            legend_params = [], legend_strings = []
+
             # Determine if noise plot
             sns.set_style("darkgrid")
             sns.set_theme(rc={'axes.facecolor':'#F8F5F2'})
@@ -125,25 +127,30 @@ else:
                 voigt_fit, = plt.plot(group_wavelength_data, line.fitted_model(group_wavelength_data), color = "#231651") 
                 continuum = [min(line.fitted_model(group_wavelength_data)) for _ in range(len(group_wavelength_data))]
                 total_sumflux = np.sum((line.fitted_model(group_wavelength_data))*(w1-w0)) 
+                legend_params.append(voigt_fit), legend_strings.append("Voigt Fit")
             else:
                 continuum = split_create_trendline(group_wavelength_data, group_flux_data, peak_width_pixels)
                 total_sumflux = np.sum(group_flux_data*(w1-w0))
 
+            # Plot airglow if applicable
+            if len(group_airglow) > 0:
+                for airglow in group_airglow['Central Wavelength']:
+                    airglow_lam = plt.axvline(x = airglow, color = '#4464AD', linewidth = 1)
+                    legend_params.insert(0, airglow_lam), legend_strings.insert(0, "Airglow")
+
             # Plot info
             plt.plot(group_wavelength_data, group_flux_data, linewidth=1, color = '#4B3C30')
             continuum_fit, = plt.plot(group_wavelength_data, continuum, color = "#DA667B")
+            legend_params.insert(0, continuum_fit), legend_strings.insert(0, "Continuum")
 
             # Plot all rest wavelengths
             for wavelength in line.wavelength_group:
                 rest_lam = plt.axvline(x=wavelength, color = "#71816D", linewidth = 1, linestyle=((0, (5, 5))))
             obs_lam = plt.axvline(x = line.obs_lam, color = "#D7816A", linewidth = 1)
+            legend_params.insert(0, obs_lam), legend_strings.insert(0, "Observed Wavelength")
+            legend_params.insert(0, rest_lam), legend_strings.insert(0, "Rest Wavelength")
 
-            # Plot legend
-            if line.fitted_model:
-                legend = plt.legend([rest_lam, obs_lam, voigt_fit, continuum_fit], ["Rest Wavelength", "Observed Wavelength", "Voigt Fit", "Continuum"])
-            else:
-                legend = plt.legend([rest_lam, obs_lam, continuum_fit], ["Rest Wavelength", "Observed Wavelength", "Continuum"])
-
+            legend = plt.legend(legend_params, legend_strings)
             legend.get_frame().set_facecolor('white')
             plt.show()
 

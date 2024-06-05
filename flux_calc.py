@@ -74,7 +74,7 @@ def split_create_trendline(wavelength_data, flux_data, peak_width_pixels):
     else:
         avg_flux = avg_flux_right
     
-    continuum_array = [avg_flux for i in range(length + 1)]
+    continuum_array = [avg_flux for _ in range(length + 1)]
     
     return continuum_array
     

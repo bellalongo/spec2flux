@@ -42,12 +42,12 @@ def emission_line_to_dict(emission_line_obj):
     return {
         "wavelength_group": emission_line_obj.wavelength_group,
         "ion": emission_line_obj.ion,
-        "obs_lam": emission_line_obj.obs_lam,
+        "obs_lam": float(emission_line_obj.obs_lam),
         "noise_bool": emission_line_obj.noise_bool,
         "blended_bool": emission_line_obj.blended_bool,
         "doppler_candidate": None,
         "fitted_model": None,
-        "continuum": emission_line_obj.continuum,
+        "continuum": float(emission_line_obj.continuum),
         "flux_error": emission_line_obj.flux_error
     }
 
@@ -89,7 +89,7 @@ def peak_width_finder(grating, wavelength_data):
 """
 def grouping_emission_lines(min_wavelength, rest_lam_data):
     # Initialize variables
-    tolerance = 10. # adjust me!
+    tolerance = 10. 
     ion_groups = {}
     close_group_found = False
 
@@ -146,7 +146,6 @@ def doppler_shift_calc(grouped_lines, w, f, peak_width, doppler_filename):
             for wavelength in group:
                 # Intialize parameters
                 wavelength_mask = (w > wavelength - peak_width/2) & (w < wavelength + peak_width/2) 
-
                 init_x0 = wavelength
                 init_amp = np.max(f[wavelength_mask]) 
                 init_fwhm_g = peak_width/5

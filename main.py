@@ -16,7 +16,6 @@ from flux_calc import *
 
 
 def main():
-    # Pull spectra information
     try: 
         filename = sys.argv[1]
         instrument = sys.argv[2]
@@ -35,8 +34,8 @@ def main():
 
     # Adjustable values
     mask = (w > 1160) # change if the spectra starts at a different wavelength
-    fresh_start = True # will delete all existing files for that star (set to False if want to just see final plot)
-    gaussian_smoothing = True # will smooth spectrum by a preset normaling term
+    fresh_start = True # will delete all existing files for that star (set to False if want to just see final plot
+    gaussian_smoothing = True # will smooth spectrum by a preset normalizing term
 
     # Flux data
     wavelength_data, flux_data, error_data = w[mask], f[mask], e[mask]
@@ -97,17 +96,18 @@ def main():
 
     # Calculate emission lines
     else:
-        emission_line_data = [] # used later for json 
-
+        emission_line_data = []
+        
+        # Iterate through eache emission line
         for index, line in enumerate(emission_line_list):
-            # Define necessary variables
+            # Define emission line variables
             group = line.wavelength_group
             flux_mask = (wavelength_data > group[0] - peak_width) & (wavelength_data < group[len(group) - 1] + peak_width)
             group_wavelength_data = wavelength_data[flux_mask]
             group_flux_data = flux_data[flux_mask]
             group_airglow = airglow_df[(airglow_df['Central Wavelength'] >= np.min(group_wavelength_data)) & (airglow_df['Central Wavelength'] <= np.max(group_wavelength_data))]
 
-            # Necessary emission line info
+            # Emission line information
             rest_lam = line.wavelength_group[len(line.wavelength_group) - 1] * u.AA
             line.obs_lam = doppler_shift.to(u.AA,  equivalencies=u.doppler_optical(rest_lam)).value
             w0,w1 = wavelength_edges(group_wavelength_data)
@@ -117,7 +117,7 @@ def main():
             if line.doppler_candidate:
                 noise_bool_list.append(False)
                 
-                # Calculate continuum and total flux
+                # Calculate continuum and total flux from voigt fit
                 continuum = [min(line.fitted_model(group_wavelength_data)) for _ in range(len(group_wavelength_data))]
                 total_sumflux = np.sum((line.fitted_model(group_wavelength_data))*(w1-w0)) 
             else:
@@ -151,18 +151,15 @@ def main():
                         airglow_lam = plt.axvline(x = airglow, color = '#4464AD', linewidth = 1)
                         legend_params.insert(0, airglow_lam), legend_strings.insert(0, "Airglow")
 
-                # Plot info
+                # Plot emission lines
                 plt.plot(group_wavelength_data, group_flux_data, linewidth=1, color = '#4B3C30')
                 continuum_fit, = plt.plot(group_wavelength_data, continuum, color = "#DA667B")
                 legend_params.insert(0, continuum_fit), legend_strings.insert(0, "Continuum")
-
-                # Plot all rest wavelengths
                 for wavelength in line.wavelength_group:
                     rest_lam = plt.axvline(x=wavelength, color = "#71816D", linewidth = 1, linestyle=((0, (5, 5))))
                 obs_lam = plt.axvline(x = line.obs_lam, color = "#D7816A", linewidth = 1)
                 legend_params.insert(0, obs_lam), legend_strings.insert(0, "Observed Wavelength")
                 legend_params.insert(0, rest_lam), legend_strings.insert(0, "Rest Wavelength")
-
                 legend = plt.legend(legend_params, legend_strings)
                 legend.get_frame().set_facecolor('white')
                 plt.show()
@@ -202,27 +199,27 @@ def main():
         flux_mask = (wavelength_data > group[0] - peak_width) & (wavelength_data < group[len(group) - 1] + peak_width) # ADJUST ME IF ADJUST FLUX MASK CALC IN EL.PY!
         continuum = [line.continuum for _ in range(len(wavelength_data[flux_mask]))]
 
+        # Check if noise
         if line.noise_bool:
             # Plot rest wavelengths
             for curr_rest in line.wavelength_group:
                 noisy_rest_lam = plt.axvline(x=curr_rest, color = '#6F96AE', linewidth = 1.5, linestyle=((0, (5, 5))))
-
         else:
-            # Plot rest wavelengths
+            # Plot rest and observed wavelengths
             for curr_rest in line.wavelength_group:
                 rest_lam = plt.axvline(x=curr_rest, color = '#F3BAD3', linewidth = 1.5, linestyle=((0, (5, 5))))
             obs_lam = plt.axvline(x = line.obs_lam, color = '#DE639A', linewidth = 1.5)
 
         trendline, = plt.plot(wavelength_data[flux_mask], continuum, color="#EB6424")
 
-    # Plot details
+    # Plot legend
     legend = plt.legend([noisy_rest_lam, rest_lam, obs_lam, trendline], 
                         ["Noise Wavelength", "Rest Wavelength", "Observed Wavelength", "Continuum"])
     plt.savefig(final_plot_filename)
     plt.show()
 
     # Check if calculations have already been stored
-    if doppler_found:
+    if exists(ecsv_filename):
         sys.exit(f"Flux calculations already added to a ecsv and fits file for {star_name}")
 
     # Add emission line data to an array

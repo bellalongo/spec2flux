@@ -80,7 +80,7 @@ def peak_width_finder(grating, wavelength_data):
 
 """
     Groups blended emission lines together based off of ion, and a pre-determined tolerance
-    (Note: this function assumes the DEM data is increasing)
+    (Note: this function assumes the DEM data is strictly increasing)
     Name:       grouping_emission_lines()
     Parameters: 
                 rest_lam_data: dataframe of emission lines
@@ -95,27 +95,28 @@ def grouping_emission_lines(min_wavelength, rest_lam_data):
 
     # Loop through emission lines
     for _, row in rest_lam_data.iterrows():
-        # Extract ion name and wavelength
         ion = row["Ion"]
         wavelength = float(row["Wavelength"])
 
+        # Check if wavelength is within wavelength bounds
         if wavelength < min_wavelength: 
             continue
 
-        # Check if ion already exists in the dictionary
+        # Check if ion does not exist in the dictionary
         if ion not in ion_groups:
             ion_groups[ion] = [[wavelength]]
+        # Ion is already in the dictionary
         else:
-            # Reset
             close_group_found = False
+            # Iterate through each group for that ion
             for group in ion_groups[ion]:
-                # Check if the largest value in the group - wavelength is less than the tolerance
+                # If the largest value in the group - wavelength is less than the tolerance, add to that group
                 if abs(max(group) - wavelength) <= tolerance:
                     group.append(wavelength)
                     close_group_found = True
                     break
             
-            # If no close group was found
+            # If no close group was found, add to that ion as a seperate group
             if not close_group_found:
                 ion_groups[ion].append([wavelength])
 
@@ -134,6 +135,7 @@ def grouping_emission_lines(min_wavelength, rest_lam_data):
 """
 def doppler_shift_calc(grouped_lines, w, f, peak_width, doppler_filename):
     rest_candidates, obs_candidates, emission_line_objs = [], [], []
+
     # Iterate through groups
     for ion in grouped_lines:
         for group in grouped_lines[ion]:
@@ -143,19 +145,20 @@ def doppler_shift_calc(grouped_lines, w, f, peak_width, doppler_filename):
             # Check if data is valid
             if not any(f[group_mask]):
                 continue
+            # Iterate through each wavelength in the group
             for wavelength in group:
-                # Intialize parameters
+                # Initial param guesses
                 wavelength_mask = (w > wavelength - peak_width/2) & (w < wavelength + peak_width/2) 
                 init_x0 = wavelength
                 init_amp = np.max(f[wavelength_mask]) 
                 init_fwhm_g = peak_width/5
                 init_fwhm_l = peak_width/5
 
-                # Voigt distributions
+                # Voigt profile
                 voigt_profile = Voigt1D(x_0 = init_x0, amplitude_L = init_amp, fwhm_L = init_fwhm_l, fwhm_G = init_fwhm_g)
                 voigt_profiles.append(voigt_profile)
             
-            # Combine voigt distribitions
+            # Combine voigt profiles
             composite_model = voigt_profiles[0]
             for voigt_profile in voigt_profiles[1:]:
                 composite_model += voigt_profile
@@ -182,7 +185,7 @@ def doppler_shift_calc(grouped_lines, w, f, peak_width, doppler_filename):
             except (RuntimeError, TypeError, NonFiniteValueError):
                 continue
 
-            # Basic plot
+            # Plot basics
             sns.set_theme()
             fig = plt.figure(figsize=(14,7), facecolor="white")
             ax = fig.add_subplot()
@@ -218,20 +221,23 @@ def doppler_shift_calc(grouped_lines, w, f, peak_width, doppler_filename):
     assert len(doppler_bool_list) > 0, "You didn't click 'y' and 'n' to choose did you?"
     assert len(doppler_bool_list) == len(rest_candidates), "Did you click out of the figure instead of clicking 'y' or 'n'?" 
 
-    dv = []
     # Calculate doppler shift
+    dv = []
+    # Iterate through each doppler candidate
     for i, boolean in enumerate(doppler_bool_list):
         group_doppler = []
-        if boolean:
-            # Set as doppler candidate
+        
+        # If is a doppler candidate, set as one in dict
+        if boolean: 
             emission_line_objs[i].update_doppler_candidate(True)
 
-            # Iterate through that group
+            # Calculate doppler for each emission line in that group
             for j, rest_wavelength in enumerate(rest_candidates[i]):
                 u_rest_lam = rest_wavelength * u.AA
                 u_obs_lam = obs_candidates[i][j] * u.AA
                 group_doppler.append(u_obs_lam.to(u.km/u.s,  equivalencies=u.doppler_optical(u_rest_lam)))
             dv.append(sum(group_doppler)/ len(group_doppler))
+
     doppler_shift = sum(dv)/len(dv)
 
     # Store value
@@ -257,7 +263,7 @@ def on_key(event, purpose):
         sys.exit("Invalid purpose, select 'Noise Detection' or 'Doppler Calculation'")
 
     if event.key not in valid_keys:
-        sys.exit("Invalid key input, select 'y' or 'n'")
+        print("Invalid key input, select 'y' or 'n'")
 
     if purpose == "Noise Detection":
         noise_bool_list.append(event.key == 'y')

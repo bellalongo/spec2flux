@@ -127,9 +127,11 @@ def grouping_emission_lines(min_wavelength, rest_lam_data):
     Calculates the doppler shift based off of peaks and high liklihood rest lam lines
     Name:       doppler_shift_calc()
     Parameters: 
-                rest_lam_data: rest lam data
-                wavelength_data: masked wavelength data from the spectra
-                flux_range: range to measure the flux of each peak
+                grouped_lines: grouped emission lines by rest wavelength
+                w: current star's masked wavelength data
+                f: current star's masked flux data
+                peak_width: average emission line width
+                doppler_filename: filename where the doppler shift is stores
     Returns:
                 doppler_shift: doppler shift of the spectra
 """

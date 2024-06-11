@@ -34,8 +34,8 @@ def main():
 
     # Adjustable values
     mask = (w > 1160) # change if the spectra starts at a different wavelength
-    fresh_start = True # will delete all existing files for that star (set to False if want to just see final plot
-    gaussian_smoothing = True # will smooth spectrum by a preset normalizing term
+    fresh_start = True # will delete all existing files for that star (set to False if want to just see final plot)
+    gaussian_smoothing = False # will smooth spectrum by a preset normalizing term
 
     # Flux data
     wavelength_data, flux_data, error_data = w[mask], f[mask], e[mask]
@@ -65,37 +65,32 @@ def main():
     ecsv_filename = "./flux/" + star_name.lower() + ".ecsv"
     final_plot_filename = "./plots/" + star_name.lower() + "_final_plot.png"
 
-    # Delete existing data if fresh start
-    if fresh_start:
-        if exists(doppler_filename) or exists(emission_line_filename):
+    # Check run type
+    if not fresh_start:
+        # Load doppler
+        doppler_shift = np.loadtxt(doppler_filename)*(u.km/u.s)
+
+        # Read emission_line data from JSON file
+        with open(emission_line_filename, "r") as json_file:
+            emission_line_data = json.load(json_file)
+
+        # Reconstruct emission_line objects from dictionaries
+        emission_line_list.clear() 
+        for data in emission_line_data:
+            emission_line_obj = emission_line(**data)
+            emission_line_list.append(emission_line_obj)
+    else:
+        if exists(doppler_filename):
+            # Remove all files
             os.remove(doppler_filename)
             os.remove(emission_line_filename)
             os.remove(fits_filename)
             os.remove(ecsv_filename)
             os.remove(final_plot_filename)
 
-    # Check if doppler file exists 
-    doppler_found = exists(doppler_filename)
-    if doppler_found:
-        doppler_shift = np.loadtxt(doppler_filename)*(u.km/u.s)
-    else:
+        # Calculate doppler
         doppler_shift = doppler_shift_calc(grouped_lines, wavelength_data, flux_data, peak_width, doppler_filename)
 
-    # Check if emission line file exists
-    emission_line_found = exists(emission_line_filename)
-    if emission_line_found:
-        # Read emission_line data from JSON file
-        with open(emission_line_filename, "r") as json_file:
-            emission_line_data = json.load(json_file)
-
-        # Reconstruct emission_line objects from dictionaries
-        emission_line_list = []
-        for data in emission_line_data:
-            emission_line_obj = emission_line(**data)
-            emission_line_list.append(emission_line_obj)
-
-    # Calculate emission lines
-    else:
         emission_line_data = []
         
         # Iterate through eache emission line
@@ -105,6 +100,7 @@ def main():
             flux_mask = (wavelength_data > group[0] - peak_width) & (wavelength_data < group[len(group) - 1] + peak_width)
             group_wavelength_data = wavelength_data[flux_mask]
             group_flux_data = flux_data[flux_mask]
+            group_error_data = error_data[flux_mask]
             group_airglow = airglow_df[(airglow_df['Central Wavelength'] >= np.min(group_wavelength_data)) & (airglow_df['Central Wavelength'] <= np.max(group_wavelength_data))]
 
             # Emission line information

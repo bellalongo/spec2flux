@@ -100,11 +100,10 @@ def main():
             flux_mask = (wavelength_data > group[0] - peak_width) & (wavelength_data < group[len(group) - 1] + peak_width)
             group_wavelength_data = wavelength_data[flux_mask]
             group_flux_data = flux_data[flux_mask]
-            group_error_data = error_data[flux_mask]
             group_airglow = airglow_df[(airglow_df['Central Wavelength'] >= np.min(group_wavelength_data)) & (airglow_df['Central Wavelength'] <= np.max(group_wavelength_data))]
 
             # Emission line information
-            rest_lam = line.wavelength_group[len(line.wavelength_group) - 1] * u.AA
+            rest_lam = line.wavelength_group[-1] * u.AA
             line.obs_lam = doppler_shift.to(u.AA,  equivalencies=u.doppler_optical(rest_lam)).value
             w0,w1 = wavelength_edges(group_wavelength_data)
             sumerror = (np.sum(error_data[flux_mask]**2 * (w1-w0)**2))**0.5
@@ -116,6 +115,8 @@ def main():
                 # Calculate continuum and total flux from voigt fit
                 continuum = [min(line.fitted_model(group_wavelength_data)) for _ in range(len(group_wavelength_data))]
                 total_sumflux = np.sum((line.fitted_model(group_wavelength_data))*(w1-w0)) 
+
+            # If was not a doppler candidate
             else:
                 # Plot legend parameters and strings
                 legend_params, legend_strings = [], []
@@ -195,11 +196,13 @@ def main():
         flux_mask = (wavelength_data > group[0] - peak_width) & (wavelength_data < group[len(group) - 1] + peak_width) # ADJUST ME IF ADJUST FLUX MASK CALC IN EL.PY!
         continuum = [line.continuum for _ in range(len(wavelength_data[flux_mask]))]
 
-        # Check if noise
+        # If noise
         if line.noise_bool:
             # Plot rest wavelengths
             for curr_rest in line.wavelength_group:
                 noisy_rest_lam = plt.axvline(x=curr_rest, color = '#6F96AE', linewidth = 1.5, linestyle=((0, (5, 5))))
+
+        # If not noise
         else:
             # Plot rest and observed wavelengths
             for curr_rest in line.wavelength_group:

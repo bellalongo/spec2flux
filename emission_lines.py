@@ -65,14 +65,14 @@ def emission_line_to_dict(emission_line_obj):
 def peak_width_finder(grating, wavelength_data):
     # Check grating
     if 'L' in grating:
-        peak_width = 5.0
+        peak_width = 5.0 # NOTE! adjust me as seems fit!
     else:
         peak_width = 0.5
         
     flux_range = 2*peak_width
 
     # Flux range in pixels calculation
-    angstroms_to_pixels = wavelength_data[1] - wavelength_data[0] # NOTE! have to recalculate this number every time
+    angstroms_to_pixels = wavelength_data[1] - wavelength_data[0] 
     peak_width_pixels = math.floor(peak_width/angstroms_to_pixels)
 
     return peak_width, peak_width_pixels, flux_range
@@ -105,6 +105,7 @@ def grouping_emission_lines(min_wavelength, rest_lam_data):
         # Check if ion does not exist in the dictionary
         if ion not in ion_groups:
             ion_groups[ion] = [[wavelength]]
+            
         # Ion is already in the dictionary
         else:
             close_group_found = False
@@ -147,6 +148,7 @@ def doppler_shift_calc(grouped_lines, w, f, peak_width, doppler_filename):
             # Check if data is valid
             if not any(f[group_mask]):
                 continue
+
             # Iterate through each wavelength in the group
             for wavelength in group:
                 # Initial param guesses
@@ -171,11 +173,12 @@ def doppler_shift_calc(grouped_lines, w, f, peak_width, doppler_filename):
                 ion = ion, 
                 obs_lam = None, 
                 noise_bool = None, 
-                blended_bool = True if len(group) > 1 else False, 
+                blended_bool = len(group) > 1, 
                 doppler_candidate = None, 
                 fitted_model= None,
                 continuum = None,
-                flux_error = None)
+                flux_error = None
+                )
             emission_line_list.append(group_emission_line_obj)
 
             # Try to fit the model
@@ -200,15 +203,14 @@ def doppler_shift_calc(grouped_lines, w, f, peak_width, doppler_filename):
             # Plotting rest and obs emission lines
             group_rest_candidates, group_obs_candidates = [], []
             for i, wavelength in enumerate(group):
+                # Rest and observed wavlengths
                 rest_lam = plt.axvline(x=wavelength, color = "#F96E46", linestyle=((0, (5, 5))), linewidth=1)
+                obs_lam = plt.axvline(x=fitted_model.x_0.value if len(group) == 1 else fitted_model[i].x_0.value,
+                                      color="#8F1423", linewidth=1)
+                
+                # Append to necessary lists
+                group_obs_candidates.append(fitted_model.x_0.value if len(group) == 1 else fitted_model[i].x_0.value)
                 group_rest_candidates.append(wavelength)
-
-                if len(group) == 1:
-                    obs_lam = plt.axvline(x= fitted_model.x_0.value, color = "#8F1423", linewidth = 1)
-                    group_obs_candidates.append(fitted_model.x_0.value)
-                    break
-                obs_lam = plt.axvline(x= fitted_model[i].x_0.value, color = "#8F1423", linewidth = 1)
-                group_obs_candidates.append(fitted_model[i].x_0.value)
             
             plt.plot(w[group_mask], f[group_mask], linewidth=1)
             voigt_fit, = plt.plot(w[group_mask], fitted_model(w[group_mask]), color = "#111D4A")     

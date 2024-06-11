@@ -35,7 +35,6 @@ def wavelength_edges(wavelength_data):
                 smoothed_error: smoothed error data
 """
 def smooth_data(wavelength_data, flux_data, error_data, sigma):
-    # Smooth data
     smoothed_wavelength = gaussian_filter(wavelength_data, sigma)
     smoothed_flux = gaussian_filter(flux_data, sigma)
     smoothed_error = gaussian_filter(error_data, sigma)
@@ -51,7 +50,7 @@ def smooth_data(wavelength_data, flux_data, error_data, sigma):
                 flux_data: masked flux data from the spectra
                 peak_width_pixels: peak width in pixels  
     Returns:
-                p(wavelength_array): continuum data for the current peak
+                continuum_array: continuum data for the current peak
 """
 def split_create_trendline(wavelength_data, flux_data, peak_width_pixels):
     # Initialize variables

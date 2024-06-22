@@ -34,7 +34,7 @@ def main():
 
     # Adjustable values
     mask = (w > 1160) # change if the spectra starts at a different wavelength
-    fresh_start = True # will delete all existing files for that star (set to False if want to just see final plot)
+    fresh_start = False # will delete all existing files for that star (set to False if want to just see final plot)
     gaussian_smoothing = False # will smooth spectrum by a preset normalizing term
 
     # Flux data

@@ -41,7 +41,7 @@ The script accomplishes the task of calculating flux by:
    ```
 5. Run the script:
     ```sh
-   python3 main.py spectra/fits_file.fits 'instrument' 'grating' 'star name'
+   python main.py spectra/ex_fits_file.fits 'instrument' 'grating' 'star name'
    ```
 
 ## Adjustments

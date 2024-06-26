@@ -1,0 +1,42 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+.coverage
+.coverage.*
+.coverage.json
+.hypothesis/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+(link unavailable)
+db.sqlite3
+
+# Flask stuff:
+instance/
+.flaskenv
+
+# Other
+.DS_Store
+.env
+
+# Jupyter Notebook stuff:
+.ipynb_checkpoints/
+
+# Folders
+doppler/
+emission_lines/
+flux/
+notebooks(no git)
+plots/
+spectra/

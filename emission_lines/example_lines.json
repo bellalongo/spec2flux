@@ -10,7 +10,7 @@
             1176.372
         ],
         "ion": "C III",
-        "obs_lam": 1176.3402553160006,
+        "obs_lam": 1176.3073639278985,
         "noise_bool": false,
         "blended_bool": true,
         "doppler_candidate": null,
@@ -26,7 +26,7 @@
             1206.499
         ],
         "ion": "Si III",
-        "obs_lam": 1206.466442331592,
+        "obs_lam": 1206.4327085918785,
         "noise_bool": false,
         "blended_bool": false,
         "doppler_candidate": null,
@@ -47,7 +47,7 @@
             1303.323
         ],
         "ion": "Si III",
-        "obs_lam": 1303.2878295124467,
+        "obs_lam": 1303.2513885714725,
         "noise_bool": false,
         "blended_bool": true,
         "doppler_candidate": null,
@@ -63,7 +63,7 @@
             1218.39
         ],
         "ion": "O V",
-        "obs_lam": 1218.3571214500703,
+        "obs_lam": 1218.3230552377242,
         "noise_bool": true,
         "blended_bool": false,
         "doppler_candidate": null,
@@ -79,15 +79,15 @@
             1371.292
         ],
         "ion": "O V",
-        "obs_lam": 1371.254995352481,
-        "noise_bool": false,
+        "obs_lam": 1371.216653996708,
+        "noise_bool": true,
         "blended_bool": false,
         "doppler_candidate": null,
         "fitted_model": null,
         "continuum": 6.295600412177418e-16,
         "flux_error": [
-            2.9124899753216485e-16,
-            1.2089965055708602e-16
+            -3.626989516712581e-16,
+            0
         ]
     },
     {
@@ -96,15 +96,15 @@
             1242.804
         ],
         "ion": "N V",
-        "obs_lam": 1242.7704626323534,
-        "noise_bool": true,
+        "obs_lam": 1242.7357138040074,
+        "noise_bool": false,
         "blended_bool": true,
         "doppler_candidate": null,
         "fitted_model": null,
         "continuum": 7.21515935911291e-16,
         "flux_error": [
-            -1.1341906351718008e-15,
-            0
+            2.3435451056487853e-15,
+            3.7806354505726694e-16
         ]
     },
     {
@@ -113,7 +113,7 @@
             1259.519
         ],
         "ion": "S II",
-        "obs_lam": 1259.4850115740205,
+        "obs_lam": 1259.4497953938912,
         "noise_bool": false,
         "blended_bool": true,
         "doppler_candidate": null,
@@ -131,15 +131,15 @@
             1265.001
         ],
         "ion": "Si II",
-        "obs_lam": 1264.9668636409197,
-        "noise_bool": true,
+        "obs_lam": 1264.9314941839446,
+        "noise_bool": false,
         "blended_bool": true,
         "doppler_candidate": null,
         "fitted_model": null,
         "continuum": 4.0226156900982975e-17,
         "flux_error": [
-            -1.2086277172756983e-15,
-            0
+            1.1670042406033031e-14,
+            4.0287590575856613e-16
         ]
     },
     {
@@ -147,15 +147,15 @@
             1304.369
         ],
         "ion": "Si II",
-        "obs_lam": 1304.3338012858826,
-        "noise_bool": false,
+        "obs_lam": 1304.2973310987245,
+        "noise_bool": true,
         "blended_bool": false,
         "doppler_candidate": null,
         "fitted_model": null,
         "continuum": 3.9122652367078965e-15,
         "flux_error": [
-            3.158999321776302e-14,
-            5.549173965124861e-16
+            -1.6647521895374582e-15,
+            0
         ]
     },
     {
@@ -164,7 +164,7 @@
             1533.43
         ],
         "ion": "Si II",
-        "obs_lam": 1533.38862001919,
+        "obs_lam": 1533.3457452812181,
         "noise_bool": false,
         "blended_bool": true,
         "doppler_candidate": null,
@@ -181,7 +181,7 @@
             1323.952
         ],
         "ion": "C II",
-        "obs_lam": 1323.9162728338736,
+        "obs_lam": 1323.8792551055863,
         "noise_bool": true,
         "blended_bool": true,
         "doppler_candidate": null,
@@ -198,7 +198,7 @@
             1335.709
         ],
         "ion": "C II",
-        "obs_lam": 1335.6729555683744,
+        "obs_lam": 1335.6356091140976,
         "noise_bool": false,
         "blended_bool": true,
         "doppler_candidate": null,
@@ -214,7 +214,7 @@
             1354.08
         ],
         "ion": "Fe XXI",
-        "obs_lam": 1354.0434598224795,
+        "obs_lam": 1354.0055997146212,
         "noise_bool": false,
         "blended_bool": false,
         "doppler_candidate": null,
@@ -231,7 +231,7 @@
             1402.77
         ],
         "ion": "Si IV",
-        "obs_lam": 1402.7321459110094,
+        "obs_lam": 1402.6929244296343,
         "noise_bool": false,
         "blended_bool": true,
         "doppler_candidate": null,
@@ -249,15 +249,15 @@
             1407.383
         ],
         "ion": "O IV",
-        "obs_lam": 1407.3450214280847,
-        "noise_bool": true,
+        "obs_lam": 1407.305670967124,
+        "noise_bool": false,
         "blended_bool": true,
         "doppler_candidate": null,
         "fitted_model": null,
         "continuum": 1.6863693461345205e-17,
         "flux_error": [
-            -1.4667718597875304e-15,
-            0
+            6.56898469356134e-15,
+            4.889239532625101e-16
         ]
     },
     {
@@ -266,7 +266,7 @@
             1406.016
         ],
         "ion": "S IV",
-        "obs_lam": 1405.9780583169115,
+        "obs_lam": 1405.938746077302,
         "noise_bool": false,
         "blended_bool": true,
         "doppler_candidate": null,
@@ -282,7 +282,7 @@
             1486.496
         ],
         "ion": "N IV",
-        "obs_lam": 1486.455886544574,
+        "obs_lam": 1486.4143240823184,
         "noise_bool": true,
         "blended_bool": false,
         "doppler_candidate": null,
@@ -299,7 +299,7 @@
             1550.772
         ],
         "ion": "C IV",
-        "obs_lam": 1550.73015204111,
+        "obs_lam": 1550.6867924204203,
         "noise_bool": false,
         "blended_bool": true,
         "doppler_candidate": null,
@@ -315,7 +315,7 @@
             1640.42
         ],
         "ion": "He II",
-        "obs_lam": 1640.375732868067,
+        "obs_lam": 1640.3298666872408,
         "noise_bool": false,
         "blended_bool": false,
         "doppler_candidate": null,
@@ -331,7 +331,7 @@
             1666.142
         ],
         "ion": "O III",
-        "obs_lam": 1666.0970387536527,
+        "obs_lam": 1666.0504533851165,
         "noise_bool": true,
         "blended_bool": false,
         "doppler_candidate": null,

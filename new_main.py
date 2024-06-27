@@ -14,7 +14,7 @@ def new_main():
     rest_dir = 'DEM_goodlinelist.csv'
     instrument = 'stis'
     grating = 'e140m'
-    star_name = 'New Script Example'
+    star_name = 'NEWEX'
     min_wavelength = 1160
 
     # User adjustable parameters
@@ -28,11 +28,8 @@ def new_main():
     # Calculate flux
     flux_calc = FluxCalculator(spectrum, emission_lines, fresh_start)
 
-    # Sanity check
-    for line in emission_lines.line_list:
-        print(line.fitted_model)
-
     # next function should take in spectrum as an object
+    print(flux_calc.line_dicts)
 
 
 if __name__ == '__main__':

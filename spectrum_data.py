@@ -1,6 +1,7 @@
 import astropy.io.fits as fits
 from datetime import date
 import math
+import numpy as np
 import pandas as pd
 from scipy.ndimage import gaussian_filter
 
@@ -53,8 +54,7 @@ class SpectrumData(object):
         """
             Finds the average width of a peak based off of the grating
             Parameters: 
-                        grating: the grating of the spectra
-                        wavelength_data: masked wavelength data from the spectra
+                        None
             Returns:
                         peak_width: average peak width
                         flux_range: range to measure the flux of each peak 
@@ -78,9 +78,6 @@ class SpectrumData(object):
         """
             Smooths data using gaussian_filter
             Parameters: 
-                        wavelength_data: masked wavelength data from the spectra  
-                        flux_data: masked flux data from the spectra   
-                        error_data: masked error data from the spectra  
                         sigma: standard deviation of the gaussian (controls how much neighboring data points contribute to smoothing)
             Returns:
                         smoothed_wavelength: smoothed wavelength data

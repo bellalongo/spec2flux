@@ -2,9 +2,12 @@
 
 
 class EmissionLines(object):
-    def __init__(self, min_wavelength, rest_lam_data):
-        self.grouped_lines = self.grouping_emission_lines(min_wavelength, rest_lam_data)
+    def __init__(self, spectrum):
+        self.spectrum = spectrum
+        self.grouped_lines = self.grouping_emission_lines()
 
+        # Initialize emission list list
+        self.line_list = []
 
     def grouping_emission_lines(self):
         """
@@ -21,12 +24,12 @@ class EmissionLines(object):
         close_group_found = False
 
         # Loop through emission lines
-        for _, row in self.rest_lam_data.iterrows():
+        for _, row in self.spectrum.rest_lam_data.iterrows():
             ion = row["Ion"]
             wavelength = float(row["Wavelength"])
 
             # Check if wavelength is within wavelength bounds
-            if wavelength < self.min_wavelength: 
+            if wavelength < self.spectrum.min_wavelength: 
                 continue
 
             # Check if ion does not exist in the dictionary
@@ -51,10 +54,10 @@ class EmissionLines(object):
         return ion_groups
 
 
-    class emission_line:
-        def __init__(self, wavelength_group, ion, obs_lam, noise_bool, blended_bool, doppler_candidate, fitted_model, continuum, flux_error):
-            self.wavelength_group = wavelength_group
+    class Emission_Line: # MIGHT NOT NEED ME WE'LL SEE ????? IF I HAVE THE OBJECT
+        def __init__(self, ion, group_lam, obs_lam, noise_bool, blended_bool, doppler_candidate, fitted_model, continuum, flux_error):
             self.ion = ion
+            self.group_lam = group_lam
             self.obs_lam = obs_lam
             self.noise_bool = noise_bool
             self.blended_bool = blended_bool

@@ -34,15 +34,22 @@ class SpectrumData(object):
         self.airglow_df = pd.DataFrame(airglow_data)
 
         # Get average peak width
-        self.line_width, self.line_width_pixels, self.flux_range = self.peak_width_finder(grating, wavelength_data)
+        self.line_width, self.line_width_pixels, self.flux_range = self.peak_width_finder()
 
         # Check if data needs to be smoothed
         if smooth_data:
-            self.wavelength_data, self.flux_data, self.error_data = smooth_data(self.wavelength_data, self.flux_data, self.error_data, 1)
+            self.wavelength_data, self.flux_data, self.error_data = smooth_data(1)
         
+        # Spectrum filenames
+        self.doppler_dir = './doppler/' + star_name + '_doppler.txt'
+        self.emission_lines_dir = './emission_lines/' + star_name + '_lines.json'
+        self.fits_dir = './flux/' + star_name.lower() + '.fits' # adjust filenames
+        self.ecsv_dir = './flux/' + star_name.lower() + '.ecsv'
+        self.csv_dir = './flux/' + star_name.lower() + '.csv' # make it so they're added to a CSV
+        self.final_plot_dir = './plots/' + star_name.lower() + '_final_plot.png'
 
 
-    def peak_width_finder(self, grating, wavelength_data):
+    def peak_width_finder(self):
         """
             Finds the average width of a peak based off of the grating
             Parameters: 
@@ -53,7 +60,7 @@ class SpectrumData(object):
                         flux_range: range to measure the flux of each peak 
         """
         # Check grating
-        if 'L' in grating:
+        if 'L' in self.grating:
             peak_width = 5.0 # NOTE! adjust me as seems fit!
         else:
             peak_width = 0.5
@@ -61,13 +68,13 @@ class SpectrumData(object):
         flux_range = 2*peak_width
 
         # Flux range in pixels calculation
-        angstroms_to_pixels = wavelength_data[1] - wavelength_data[0] 
+        angstroms_to_pixels = self.wavelength_data[1] - self.wavelength_data[0] 
         peak_width_pixels = math.floor(peak_width/angstroms_to_pixels)
 
         return peak_width, peak_width_pixels, flux_range
     
 
-    def smooth_data(self, wavelength_data, flux_data, error_data, sigma):
+    def smooth_data(self, sigma):
         """
             Smooths data using gaussian_filter
             Parameters: 
@@ -80,9 +87,9 @@ class SpectrumData(object):
                         smoothed_flux: smoothed flux data
                         smoothed_error: smoothed error data
         """
-        smoothed_wavelength = gaussian_filter(wavelength_data, sigma)
-        smoothed_flux = gaussian_filter(flux_data, sigma)
-        smoothed_error = gaussian_filter(error_data, sigma)
+        smoothed_wavelength = gaussian_filter(self.wavelength_data, sigma)
+        smoothed_flux = gaussian_filter(self.flux_data, sigma)
+        smoothed_error = gaussian_filter(self.error_data, sigma)
 
         return smoothed_wavelength, smoothed_flux, smoothed_error
 

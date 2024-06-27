@@ -1,6 +1,6 @@
 import astropy.units as u
 from astropy.modeling.models import Voigt1D
-from astropy.modeling import fitting
+from astropy.modeling import fitting, CompoundModel
 from astropy.modeling.fitting import NonFiniteValueError
 import json
 import matplotlib.pyplot as plt
@@ -50,8 +50,8 @@ class FluxCalculator(object):
                 os.remove(self.spectrum.ecsv_dir)
                 os.remove(self.spectrum.csv_dir)
                 os.remove(self.spectrum.final_plot_dir)
-            else:
-                print('Either try to run again, or change run type.')
+            # else: # MAYBE ADD ME ??? WHEN DONE !
+            #     print('Either try to run again, or change run type.')
 
             # Calculate doppler
             doppler_shift = self.doppler_shift_calc()
@@ -59,7 +59,7 @@ class FluxCalculator(object):
     
     def doppler_selection_plots(self):
         # Store line_list index of doppler candidates
-        self.candidate_indices = []
+        self.candidate_indices = [] # MAYBE delete
 
         # Iterate through groups
         for ion in self.emission_lines.grouped_lines:
@@ -104,7 +104,7 @@ class FluxCalculator(object):
                     noise_bool = None, 
                     blended_bool = len(group) > 1, 
                     doppler_candidate = None, 
-                    fitted_model= None,
+                    model_params = None,
                     continuum = None,
                     flux_error = None
                     )
@@ -115,13 +115,34 @@ class FluxCalculator(object):
                     fitter = fitting.LevMarLSQFitter()
                     fitted_model = fitter(composite_model, self.spectrum.wavelength_data[group_mask], 
                                           self.spectrum.flux_data[group_mask])
-                                        
-                    # If successful, save current group info
-                    curr_index = len(self.emission_lines.line_list) - 1
-                    self.candidate_indices.append(curr_index)
-                    self.emission_lines.line_list[curr_index].fitted_model = fitted_model # show work ??
                 except (RuntimeError, TypeError, NonFiniteValueError):
                     continue
+
+                # Save model info
+                curr_index = len(self.emission_lines.line_list) - 1
+                self.candidate_indices.append(curr_index) # maybe just check if there is a fitted_model instead ??
+
+                # Save fitted model params
+                model_params = []
+                
+                if isinstance(fitted_model, CompoundModel):
+                    for component in fitted_model:
+                        model_params.append({
+                            'x_0': component.x_0.value,
+                            'amplitude_L': component.amplitude_L.value,
+                            'fwhm_L': component.fwhm_L.value,
+                            'fwhm_G': component.fwhm_G.value
+                        })
+                else:
+                    model_params.append({
+                        'x_0': fitted_model.x_0.value,
+                        'amplitude_L': fitted_model.amplitude_L.value,
+                        'fwhm_L': fitted_model.fwhm_L.value,
+                        'fwhm_G': fitted_model.fwhm_G.value
+                    })
+                                            
+                # Save model params
+                self.emission_lines.line_list[curr_index].model_params = model_params # MAYBE save params instead?
 
                 # Plot basics
                 sns.set_theme()

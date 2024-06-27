@@ -55,19 +55,16 @@ class EmissionLines(object):
 
 
     class Emission_Line: # MIGHT NOT NEED ME WE'LL SEE ????? IF I HAVE THE OBJECT
-        def __init__(self, ion, group_lam, obs_lam, noise_bool, blended_bool, doppler_candidate, fitted_model, continuum, flux_error):
+        def __init__(self, ion, group_lam, obs_lam, noise_bool, blended_bool, doppler_candidate, model_params, continuum, flux_error):
             self.ion = ion
             self.group_lam = group_lam
             self.obs_lam = obs_lam
             self.noise_bool = noise_bool
             self.blended_bool = blended_bool
             self.doppler_candidate = doppler_candidate
-            self.fitted_model = fitted_model
+            self.model_params = model_params
             self.continuum = continuum
             self.flux_error = flux_error 
-
-        def update_fitted_model(self, new_fitted_model):
-            self.fitted_model = new_fitted_model
 
         def update_doppler_candidate(self, is_doppler_candidate):
             self.doppler_candidate = is_doppler_candidate

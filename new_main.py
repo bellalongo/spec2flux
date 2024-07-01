@@ -19,7 +19,7 @@ def new_main():
 
     # User adjustable parameters
     apply_smoothing = False # True if want to apply gaussian smoothing
-    fresh_start = True # True if first time running, or have already ran for a star and want to see final plot
+    fresh_start = False # True if first time running, or have already ran for a star and want to see final plot
 
     # Load spectrum data and emission lines
     spectrum = SpectrumData(spectrum_dir, rest_dir, instrument, grating, star_name, min_wavelength, apply_smoothing)
@@ -29,10 +29,7 @@ def new_main():
     flux_calc = FluxCalculator(spectrum, emission_lines, fresh_start)
 
     # Show final plot
-    print(spectrum.doppler_shift)
-
-    # Sanity check
-    print(emission_lines.line_list)
+    spectrum.final_spectrum_plot(emission_lines, flux_calc)
 
 
 if __name__ == '__main__':

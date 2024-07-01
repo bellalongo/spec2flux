@@ -57,57 +57,6 @@ class SpectrumData(object):
         self.doppler_shift = None # will be updated in flux_calculator.py
 
 
-    def final_spectrum_plot(self, emission_lines, flux_calc):
-        """
-            Show
-        """
-        # Find max line peak
-        max_peak = max(self.flux_data[self.wavelength_data > 1250])
-        min_peak = min(self.flux_data)
-
-        # Create a basic plot
-        sns.set_style("darkgrid")
-        sns.set_theme(rc={'axes.facecolor':'#F5F5F5'})
-        fig = plt.figure(figsize=(14,7))
-        ax = fig.add_subplot()
-        plt.title("Flux vs Wavelength for " + self.star_name)
-        plt.xlabel('Wavelength (Å)')
-        plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ Å$^{-1}$)')
-        plt.plot(self.wavelength_data, self.flux_data, color = "#0D3B66")
-        plt.ylim(min_peak, max_peak * 1.5)
-
-        # Plot emission lines
-        for line in emission_lines.line_list:
-            # Create mask and continuum
-            group = line.group_lam
-            flux_mask = (self.wavelength_data > group[0] - self.line_width) & (
-                self.wavelength_data < group[len(group) - 1] + self.line_width) # ADJUST ME IF ADJUST FLUX MASK CALC IN EL.PY!
-            continuum = [line.continuum for _ in range(len(self.wavelength_data[flux_mask]))]
-
-            # Plot rest wavelengths
-            for curr_rest in line.group_lam:
-                if line.noise_bool:
-                    noisy_rest_lam = plt.axvline(x = curr_rest, color = '#6F96AE', linewidth = 1.5, linestyle=((0, (5, 5))))
-                else:
-                    rest_lam = plt.axvline(x = curr_rest, color = '#F3BAD3', linewidth = 1.5, linestyle=((0, (5, 5))))
-
-            # Plot voigt fit if there is one
-            if line.model_params:
-                # Create a voigt profile and plot
-                voigt_profile = flux_calc.create_voigt_profile(line.model_params)
-
-                voigt_fit, = plt.plot(self.wavelength_data[flux_mask], 
-                                      voigt_profile(self.wavelength_data[flux_mask]), color = "red")
-
-            trendline, = plt.plot(self.wavelength_data[flux_mask], continuum, color="#EB6424")
-
-        # Plot legend
-        plt.legend([noisy_rest_lam, rest_lam, voigt_fit, trendline], 
-                            ["Noise Wavelength", "Rest Wavelength", "Voigt Profile", "Continuum"])
-        plt.savefig(self.final_plot_dir)
-        plt.show()
-
-
     def peak_width_finder(self):
         """
             Finds the average width of a peak based off of the grating
@@ -158,8 +107,6 @@ class SpectrumData(object):
                         None
 
         """
-        print(self.doppler_shift)
-
         # Add emission line data to an array
         data_list = []
         for line in emission_lines.line_list:
@@ -223,3 +170,56 @@ class SpectrumData(object):
             for fits_header in data_header:
                 hdr.set(fits_header[0], fits_header[1], comment = fits_header[2])
             hdul.flush() 
+
+
+    def final_spectrum_plot(self, emission_lines, flux_calc):
+        """
+            Show
+        """
+        # Find max line peak
+        max_peak = max(self.flux_data[self.wavelength_data > 1250])
+        min_peak = min(self.flux_data)
+
+        # Create a basic plot
+        sns.set_style("darkgrid")
+        sns.set_theme(rc={'axes.facecolor':'#F5F5F5'})
+        fig = plt.figure(figsize=(14,7))
+        ax = fig.add_subplot()
+        plt.title("Flux vs Wavelength for " + self.star_name)
+        plt.xlabel('Wavelength (Å)')
+        plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ Å$^{-1}$)')
+        plt.plot(self.wavelength_data, self.flux_data, color = "#A7ADC6")
+        plt.ylim(min_peak, max_peak * 1.5)
+
+
+        # Plot emission lines
+        for line in emission_lines.line_list:
+            # Create mask and continuum
+            group = line.group_lam
+            flux_mask = (self.wavelength_data > group[0] - self.line_width) & (
+                self.wavelength_data < group[len(group) - 1] + self.line_width) # ADJUST ME IF ADJUST FLUX MASK CALC IN EL.PY!
+            continuum = [line.continuum for _ in range(len(self.wavelength_data[flux_mask]))]
+
+            # Plot continuum
+            trendline, = plt.plot(self.wavelength_data[flux_mask], continuum, color="#56667A", lw = 2)
+
+            # Plot voigt fit if there is one
+            if line.model_params:
+                # Create a voigt profile and plot
+                voigt_profile = flux_calc.create_voigt_profile(line.model_params)
+
+                voigt_fit, = plt.plot(self.wavelength_data[flux_mask], 
+                                      voigt_profile(self.wavelength_data[flux_mask]), color = "#2C1320")
+                
+            # Plot rest wavelengths
+            for curr_rest in line.group_lam:
+                if line.noise_bool:
+                    noisy_rest_lam = plt.axvline(x = curr_rest, color = '#8797AF', linewidth = 1.5, linestyle=((0, (5, 5))))
+                else:
+                    rest_lam = plt.axvline(x = curr_rest, color = '#F29559', linewidth = 1.5, linestyle=((0, (5, 5))))
+
+        # Plot legend
+        plt.legend([noisy_rest_lam, rest_lam, voigt_fit, trendline], 
+                            ["Noise Wavelength", "Rest Wavelength", "Voigt Profile", "Continuum"])
+        plt.savefig(self.final_plot_dir)
+        plt.show()

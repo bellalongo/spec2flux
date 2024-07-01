@@ -28,8 +28,11 @@ def new_main():
     # Calculate flux
     flux_calc = FluxCalculator(spectrum, emission_lines, fresh_start)
 
-    # next function should take in spectrum as an object
-    print(flux_calc.line_dicts)
+    # Show final plot
+    print(spectrum.doppler_shift)
+
+    # Sanity check
+    print(emission_lines.line_list)
 
 
 if __name__ == '__main__':

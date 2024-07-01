@@ -175,9 +175,9 @@ def main():
             line.update_flux_error(total_flux, sumerror)
             emission_line_data.append(emission_line_to_dict(line))
 
-    # Save emission line list information to json
-    with open(emission_line_filename, "w") as json_file:
-        json.dump(emission_line_data, json_file, indent=4)
+        # Save emission line list information to json
+        with open(emission_line_filename, "w") as json_file:
+            json.dump(emission_line_data, json_file, indent=4)
 
     # Create a basic plot
     sns.set_style("darkgrid")

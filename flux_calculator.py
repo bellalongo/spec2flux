@@ -33,9 +33,11 @@ class FluxCalculator(object):
         else:
             self.delete_spectrum_data()
 
-            self.dopper_shift = self.doppler_shift_calc()
+            self.spectrum.doppler_shift = self.doppler_shift_calc()
 
             self.flux_calc()
+
+            self.spectrum.save_data(emission_lines)
 
     
     def flux_calc(self):
@@ -62,7 +64,7 @@ class FluxCalculator(object):
             
             # Line information
             rest_lam = group_lam[-1] * u.AA
-            line.obs_lam = self.dopper_shift.to(u.AA,  equivalencies=u.doppler_optical(rest_lam)).value
+            line.obs_lam = self.spectrum.doppler_shift.to(u.AA,  equivalencies=u.doppler_optical(rest_lam)).value
             w0,w1 = self.wavelength_edges(group_wavelength_data)
             sumerror = (np.sum(self.spectrum.error_data[group_mask]**2 * (w1 - w0)**2))**0.5
 
@@ -136,6 +138,10 @@ class FluxCalculator(object):
             line.continuum = continuum[0] # only need to store 1 value
             line.flux_error = (flux, sumerror) # SEE IF THIS FORMAT WORKS
             self.line_dicts.append(self.emission_lines.emission_line_to_dict(line))
+        
+        # Add data to json
+        with open(self.spectrum.emission_lines_dir, "w") as json_file:
+            json.dump(self.line_dicts, json_file, indent=4)
 
 
     def doppler_shift_calc(self):
@@ -355,7 +361,7 @@ class FluxCalculator(object):
                         None
         '''
         # Load saved doppler shift
-        self.doppler_shift = np.loadtxt(self.spectrum.doppler_dir)*(u.km/u.s)
+        self.spectrum.doppler_shift = np.loadtxt(self.spectrum.doppler_dir)*(u.km/u.s)
 
         # Read emission_line data from JSON file
         with open(self.spectrum.emission_lines_dir, "r") as json_file:

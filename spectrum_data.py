@@ -1,9 +1,13 @@
 import astropy.io.fits as fits
+from astropy.table import Table
+import csv
 from datetime import date
 import math
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.ndimage import gaussian_filter
+import seaborn as sns
 
 
 class SpectrumData(object):
@@ -11,7 +15,7 @@ class SpectrumData(object):
                  instrument, grating, star_name, 
                  min_wavelength, smooth_data):
         
-        self.filename = spectrum_dir
+        self.spectrum_dir = spectrum_dir
         self.instrument = instrument.upper()
         self.grating = grating.upper()
         self.star_name = star_name.upper()
@@ -48,6 +52,24 @@ class SpectrumData(object):
         self.ecsv_dir = './flux/' + star_name.lower() + '.ecsv'
         self.csv_dir = './flux/' + star_name.lower() + '.csv' # make it so they're added to a CSV
         self.final_plot_dir = './plots/' + star_name.lower() + '_final_plot.png'
+
+        # Doppler shift
+        self.doppler_shift = None # will be updated in flux_calculator.py
+
+
+    def final_spectrum_plot(self):
+        """
+            Show
+        """
+        # Create a basic plot
+        sns.set_style("darkgrid")
+        sns.set_theme(rc={'axes.facecolor':'#F5F5F5'})
+        fig = plt.figure(figsize=(14,7))
+        ax = fig.add_subplot()
+        plt.title("Flux vs Wavelength for " + self.star_name)
+        plt.xlabel('Wavelength (Å)')
+        plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ Å$^{-1}$)')
+        plt.plot(self.wavelength_data, self.flux_data, color = "#0D3B66")
 
 
     def peak_width_finder(self):
@@ -89,9 +111,79 @@ class SpectrumData(object):
         smoothed_error = gaussian_filter(self.error_data, sigma)
 
         return smoothed_wavelength, smoothed_flux, smoothed_error
-
-    # maybe do saving to csv here? 
-
-        
-
     
+
+    def save_data(self, emission_lines):
+        """
+            Adds spectrum data to all file directories in CSV, ECSV, and FITS formats
+            Parameters: 
+                        emission_lines: EmissionLines instance
+            Returns:
+                        None
+
+        """
+        print(self.doppler_shift)
+
+        # Add emission line data to an array
+        data_list = []
+        for line in emission_lines.line_list:
+            data_list.append({"Ion": line.ion, 
+                               "Rest Wavelength" : line.group_lam[len(line.group_lam) - 1], 
+                               "Flux" : line.flux_error[0], 
+                               "Error" : line.flux_error[1], 
+                               "Blended Line" : line.blended_bool})
+            
+        # Create file header (EDIT INFORMATION AS NEEDED)
+        data_header = [("DATE", self.todays_date, "date flux was calculated"),
+                        ("FILENAME", self.spectrum_dir, "name of the fits file used to for flux calc"),
+                        ("FILETYPE", "SCI", "file type of fits input file"),
+                        ("TELESCP", "HST", "telescope used to measure spectrum"),
+                        ("INSTRMNT", self.instrument, "active instrument to measure spectrum"),
+                        ("GRATING", self.grating, "grating used to measure spectrum"),
+                        ("TARGNAME", self.star_name, "name of star used in measurement"),
+                        ("DOPPLER", str(self.doppler_shift.value) + " km/s", "doppler shift used to measure flux"),
+                        ("WIDTH", "+/- " + str(self.line_width) + " Angstroms", "average peak width of the emissoin lines"),
+                        ("RANGE", "+/- " + str(self.flux_range) + " Angstroms", "flux range used to isolate emission line"), 
+                        ("WIDTHPXL", str(self.line_width_pixels), "average emission line peak width in pixels"),
+                        ("UPRLIMIT", "3*error", "upper limit used for noise")]
+        
+        # Create ecsv array to add to ecsv file
+        ecsv_table = Table(rows = data_list)
+        for header_row in data_header:
+            ecsv_table.meta[header_row[0]] = header_row[1]
+        ecsv_table.write(self.ecsv_dir, overwrite = True, format = 'ascii.ecsv')
+
+        # Create CSV column heads and add data to csv file
+        data_cols_header = list(data_list[0].keys())
+        with open(self.csv_dir, mode='w', newline='') as file:
+            writer = csv.writer(file)
+
+            # Write the file header
+            writer.writerow(["Header", "Value", "Description"])
+            for row in data_header:
+                writer.writerow(row)
+
+            # Write an empty row to separate the header from the data
+            writer.writerow([])
+
+            # Write the data column headers
+            writer.writerow(data_cols_header)
+
+            # Write the data
+            dict_writer = csv.DictWriter(file, fieldnames = data_cols_header)
+            for data in data_list:
+                dict_writer.writerow(data)
+
+        # Create a fits table to store the data into the fits file
+        dtype = [('Ion', 'S10'), ('Rest_Wavelength', float), ('Flux', float), ('Error', float), ('Blended_Line', bool)]
+        data = np.array([(entry['Ion'], entry['Rest Wavelength'], entry['Flux'], entry['Error'], entry['Blended Line']) 
+                        for entry in data_list], dtype=dtype)
+        hdu = fits.BinTableHDU(data)
+        hdu.writeto(self.fits_dir, overwrite=True)
+
+        # Fits file header
+        with fits.open(self.fits_dir, mode='update') as hdul:
+            hdr = hdul[0].header
+            for fits_header in data_header:
+                hdr.set(fits_header[0], fits_header[1], comment = fits_header[2])
+            hdul.flush() 

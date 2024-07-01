@@ -181,8 +181,7 @@ class SpectrumData(object):
         min_peak = min(self.flux_data)
 
         # Create a basic plot
-        sns.set_style("darkgrid")
-        sns.set_theme(rc={'axes.facecolor':'#F5F5F5'})
+        sns.set_theme()
         fig = plt.figure(figsize=(14,7))
         ax = fig.add_subplot()
         plt.title("Flux vs Wavelength for " + self.star_name)
@@ -190,7 +189,6 @@ class SpectrumData(object):
         plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ Å$^{-1}$)')
         plt.plot(self.wavelength_data, self.flux_data, color = "#A7ADC6")
         plt.ylim(min_peak, max_peak * 1.5)
-
 
         # Plot emission lines
         for line in emission_lines.line_list:
@@ -201,7 +199,7 @@ class SpectrumData(object):
             continuum = [line.continuum for _ in range(len(self.wavelength_data[flux_mask]))]
 
             # Plot continuum
-            trendline, = plt.plot(self.wavelength_data[flux_mask], continuum, color="#56667A", lw = 2)
+            trendline, = plt.plot(self.wavelength_data[flux_mask], continuum, color = "#C05746", lw = 2)
 
             # Plot voigt fit if there is one
             if line.model_params:
@@ -209,14 +207,14 @@ class SpectrumData(object):
                 voigt_profile = flux_calc.create_voigt_profile(line.model_params)
 
                 voigt_fit, = plt.plot(self.wavelength_data[flux_mask], 
-                                      voigt_profile(self.wavelength_data[flux_mask]), color = "#2C1320")
+                                      voigt_profile(self.wavelength_data[flux_mask]), color = "#49506F")
                 
             # Plot rest wavelengths
             for curr_rest in line.group_lam:
                 if line.noise_bool:
-                    noisy_rest_lam = plt.axvline(x = curr_rest, color = '#8797AF', linewidth = 1.5, linestyle=((0, (5, 5))))
+                    noisy_rest_lam = plt.axvline(x = curr_rest, color = '#B5CA8D', linewidth = 1.5, linestyle=((0, (5, 5))))
                 else:
-                    rest_lam = plt.axvline(x = curr_rest, color = '#F29559', linewidth = 1.5, linestyle=((0, (5, 5))))
+                    rest_lam = plt.axvline(x = curr_rest, color = '#70944C', linewidth = 1.5, linestyle=((0, (5, 5))))
 
         # Plot legend
         plt.legend([noisy_rest_lam, rest_lam, voigt_fit, trendline], 

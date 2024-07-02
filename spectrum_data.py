@@ -174,14 +174,20 @@ class SpectrumData(object):
 
     def final_spectrum_plot(self, emission_lines, flux_calc):
         """
-            Show
+            Plots the final spectrum, with emission lines marked, as well as their respective continuum's and model fitters
+            Parameters: 
+                        emission_lines: EmissionLines instance
+                        flux_calc: FluxCalculator instance
+            Returns:
+                        None
         """
         # Find max line peak
         max_peak = max(self.flux_data[self.wavelength_data > 1250])
         min_peak = min(self.flux_data)
 
         # Create a basic plot
-        sns.set_theme()
+        sns.set_style("darkgrid")
+        sns.set_theme(rc={'axes.facecolor':'#F5F5F5'})
         fig = plt.figure(figsize=(14,7))
         ax = fig.add_subplot()
         plt.title("Flux vs Wavelength for " + self.star_name)
@@ -201,13 +207,13 @@ class SpectrumData(object):
             # Plot continuum
             trendline, = plt.plot(self.wavelength_data[flux_mask], continuum, color = "#C05746", lw = 2)
 
-            # Plot voigt fit if there is one
+            # Plot model fit if there is one
             if line.model_params:
-                # Create a voigt profile and plot
-                voigt_profile = flux_calc.create_voigt_profile(line.model_params)
+                # Create a model profile and plot
+                model_profile = flux_calc.create_model_profile(line.model_params)
 
-                voigt_fit, = plt.plot(self.wavelength_data[flux_mask], 
-                                      voigt_profile(self.wavelength_data[flux_mask]), color = "#49506F")
+                model_fit, = plt.plot(self.wavelength_data[flux_mask], 
+                                      model_profile(self.wavelength_data[flux_mask]), color = "#49506F")
                 
             # Plot rest wavelengths
             for curr_rest in line.group_lam:
@@ -217,7 +223,7 @@ class SpectrumData(object):
                     rest_lam = plt.axvline(x = curr_rest, color = '#70944C', linewidth = 1.5, linestyle=((0, (5, 5))))
 
         # Plot legend
-        plt.legend([noisy_rest_lam, rest_lam, voigt_fit, trendline], 
+        plt.legend([noisy_rest_lam, rest_lam, model_fit, trendline], 
                             ["Noise Wavelength", "Rest Wavelength", "Voigt Profile", "Continuum"])
         plt.savefig(self.final_plot_dir)
         plt.show()

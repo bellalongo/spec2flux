@@ -1,5 +1,5 @@
 import astropy.units as u
-from astropy.modeling.models import Voigt1D
+from astropy.modeling.models import Voigt1D, Gaussian1D
 from astropy.modeling import fitting, CompoundModel
 from astropy.modeling.fitting import NonFiniteValueError
 import json
@@ -12,10 +12,11 @@ import sys
 
 
 class FluxCalculator(object): 
-    def __init__(self, spectrum, emission_lines, fresh_start):
+    def __init__(self, spectrum, emission_lines, fresh_start, line_fit_model):
         self.spectrum = spectrum
         self.emission_lines = emission_lines
         self.fresh_start = fresh_start
+        self.line_fit_model = line_fit_model
 
         # Initialize boolean lists to be used in flux calculation
         self.doppler_bool_list = []
@@ -41,14 +42,14 @@ class FluxCalculator(object):
 
     
     def flux_calc(self):
-        '''
+        """
             Show a series of plots where the user will select if the current emission line is noise. If it is not noise, 
             then the emission line flux is calculated
             Parameters:
                         None
             Returns:
                         None
-        '''
+        """
         # Iterate through each emission line
         for i, line in enumerate(self.emission_lines.line_list):
             # Get data for each line group
@@ -71,11 +72,11 @@ class FluxCalculator(object):
             # Check if a model fit was successful
             if line.model_params:
                 # Create a voigt profile
-                voigt_profile = self.create_voigt_profile(line.model_params)
+                model_profile = self.create_model_profile(line.model_params)
 
                 # Calculate profile continuum and flux
-                continuum = [min(voigt_profile(group_wavelength_data)) for _ in range(len(group_wavelength_data))]
-                total_sumflux = np.sum((voigt_profile(group_wavelength_data))*(w1 - w0)) 
+                continuum = [min(model_profile(group_wavelength_data)) for _ in range(len(group_wavelength_data))]
+                total_sumflux = np.sum((model_profile(group_wavelength_data))*(w1 - w0)) 
 
             # If the line was used for doppler calculation -> not noise 
             if line.doppler_candidate:
@@ -102,7 +103,7 @@ class FluxCalculator(object):
                 # Check if a Voigt fit was successful
                 if line.model_params:
                     # Plot voigt profile
-                    voigt_fit, = plt.plot(group_wavelength_data, voigt_profile(group_wavelength_data), color = "#231651")
+                    voigt_fit, = plt.plot(group_wavelength_data, model_profile(group_wavelength_data), color = "#231651")
                     legend_params.append(voigt_fit), legend_strings.append("Voigt Fit")
                 else:
                     continuum = self.emission_lines.split_create_trendline(group_wavelength_data, group_flux_data)
@@ -145,14 +146,14 @@ class FluxCalculator(object):
 
 
     def doppler_shift_calc(self):
-        '''
+        """
             Calculates the doppler shift given a series of candidates, and writes this value to the
             according directory
             Parameters: 
                         None
             Returns:
                         doppler_shift: average doppler shift of preselected emission line groups
-        '''
+        """
         # Show doppler shift plots
         self.doppler_selection_plots()
 
@@ -171,7 +172,13 @@ class FluxCalculator(object):
                 # Calculate doppler for each emission line in that group
                 for j, rest_wavelength in enumerate(curr_line.group_lam):
                     u_rest_lam = rest_wavelength * u.AA
-                    u_obs_lam = curr_line.model_params[j]['x_0'] * u.AA 
+                    
+                    # Check model type
+                    if self.line_fit_model == 'Voigt':
+                        u_obs_lam = curr_line.model_params[j]['x_0'] * u.AA 
+                    else:
+                        u_obs_lam = curr_line.model_params[j]['mean'] * u.AA 
+
                     group_doppler.append(u_obs_lam.to(u.km/u.s,  equivalencies=u.doppler_optical(u_rest_lam)))
 
                 dv.append(sum(group_doppler)/ len(group_doppler))
@@ -186,20 +193,17 @@ class FluxCalculator(object):
 
     
     def doppler_selection_plots(self):
-        '''
+        """
             Shows a series of plots which the user will use to determine if an emission line is viable to be used
             for the final doppler shift calculation
             Parameters: 
                         None
             Returns:
                         None
-        '''
+        """
         # Iterate through groups
         for ion in self.emission_lines.grouped_lines:
             for group in self.emission_lines.grouped_lines[ion]:
-                # Store voigt profiles for each group
-                voigt_profiles = []
-
                 # Mask out the emission line group
                 group_mask = (self.spectrum.wavelength_data > group[0] - self.spectrum.line_width) & (
                     self.spectrum.wavelength_data < group[len(group) - 1] + self.spectrum.line_width) 
@@ -208,26 +212,8 @@ class FluxCalculator(object):
                 if not any(self.spectrum.flux_data[group_mask]):
                     continue
 
-                # Iterate through each emission line in the group
-                for line in group:
-                    # Mask out each emission line
-                    line_mask = (self.spectrum.wavelength_data > line - self.spectrum.line_width/2) & (
-                        self.spectrum.wavelength_data < line + self.spectrum.line_width/2) 
-                    
-                    # Voigt initial parama guesses
-                    init_x0 = line
-                    init_amp = np.max(self.spectrum.flux_data[line_mask]) 
-                    init_fwhm_g = self.spectrum.line_width/5
-                    init_fwhm_l = self.spectrum.line_width/5
-
-                    # Voigt profile
-                    voigt_profile = Voigt1D(x_0 = init_x0, amplitude_L = init_amp, fwhm_L = init_fwhm_l, fwhm_G = init_fwhm_g)
-                    voigt_profiles.append(voigt_profile)
-                
-                # Combine voigt profiles
-                composite_model = voigt_profiles[0]
-                for voigt_profile in voigt_profiles[1:]:
-                    composite_model += voigt_profile
+                # Fit the model
+                compound_model = self.create_model(group)
 
                 # Update emission line list
                 line_group = self.emission_lines.Emission_Line(
@@ -246,7 +232,7 @@ class FluxCalculator(object):
                 # Try to fit the model
                 try: 
                     fitter = fitting.LevMarLSQFitter()
-                    fitted_model = fitter(composite_model, self.spectrum.wavelength_data[group_mask], 
+                    fitted_model = fitter(compound_model, self.spectrum.wavelength_data[group_mask], 
                                           self.spectrum.flux_data[group_mask])
                 except (RuntimeError, TypeError, NonFiniteValueError):
                     continue
@@ -256,27 +242,7 @@ class FluxCalculator(object):
                 self.candidate_indices.append(curr_index) # maybe just check if there is a fitted_model instead ??
 
                 # Save fitted model params
-                model_params = []
-                
-                # Check model type -> maybe use this logic when implement Gaussian
-                if isinstance(fitted_model, CompoundModel):
-                    for component in fitted_model:
-                        model_params.append({
-                            'x_0': component.x_0.value,
-                            'amplitude_L': component.amplitude_L.value,
-                            'fwhm_L': component.fwhm_L.value,
-                            'fwhm_G': component.fwhm_G.value
-                        })
-                else:
-                    model_params.append({
-                        'x_0': fitted_model.x_0.value,
-                        'amplitude_L': fitted_model.amplitude_L.value,
-                        'fwhm_L': fitted_model.fwhm_L.value,
-                        'fwhm_G': fitted_model.fwhm_G.value
-                    })
-                                            
-                # Save model params
-                self.emission_lines.line_list[curr_index].model_params = model_params # MAYBE save params instead?
+                self.save_model_params(fitted_model)
 
                 # Plot basics
                 sns.set_theme()
@@ -289,16 +255,22 @@ class FluxCalculator(object):
                 cid = fig.canvas.mpl_connect('key_press_event', lambda event: self.on_key(event, 'Doppler Calculation'))
 
                 plt.plot(self.spectrum.wavelength_data[group_mask], self.spectrum.flux_data[group_mask], linewidth=1)
-                voigt_fit, = plt.plot(self.spectrum.wavelength_data[group_mask], fitted_model(self.spectrum.wavelength_data[group_mask]), color = "#111D4A")     
+                model_fit, = plt.plot(self.spectrum.wavelength_data[group_mask], fitted_model(self.spectrum.wavelength_data[group_mask]), color = "#111D4A")     
 
                 # Plotting rest and obs wavelengths
                 for i, wavelength in enumerate(group):
                     # Rest and observed wavlengths
                     rest_lam = plt.axvline(x = wavelength, color = "#F96E46", linestyle=((0, (5, 5))), linewidth=1)
-                    obs_lam = plt.axvline(x=fitted_model.x_0.value if len(group) == 1 else fitted_model[i].x_0.value,
+                    
+                    # Check model type
+                    if self.line_fit_model == 'Voigt':
+                        obs_lam = plt.axvline(x=fitted_model.x_0.value if len(group) == 1 else fitted_model[i].x_0.value,
+                                        color="#8F1423", linewidth=1)
+                    else:
+                        obs_lam = plt.axvline(x=fitted_model.mean.value if len(group) == 1 else fitted_model[i].mean.value,
                                         color="#8F1423", linewidth=1)
                     
-                legend = plt.legend([rest_lam, obs_lam, voigt_fit], ["Rest Wavelength", "Observed Wavelength", "Voigt Fit"])
+                legend = plt.legend([rest_lam, obs_lam, model_fit], ["Rest Wavelength", "Observed Wavelength", f"{self.line_fit_model} Fit"])
                 legend.get_frame().set_facecolor('white')
                 plt.show()
 
@@ -306,32 +278,129 @@ class FluxCalculator(object):
         assert len(self.doppler_bool_list) == len(self.candidate_indices), "Did you click out of the figure instead of clicking 'y' or 'n'?" 
 
 
-    def create_voigt_profile(self, model_params):
-        '''
+    def create_model(self, group):
+        """
+            DO ME
+        """
+        model_profiles = []
+
+        # Iterate through each emission line in the group
+        for line in group:
+            # Mask out each emission line
+            line_mask = (self.spectrum.wavelength_data > line - self.spectrum.line_width/2) & (
+                self.spectrum.wavelength_data < line + self.spectrum.line_width/2) 
+            
+            # Check model type
+            if self.line_fit_model == 'Voigt':
+                # Voigt initial param guesses
+                init_x0 = line
+                init_amp = np.max(self.spectrum.flux_data[line_mask]) 
+                init_fwhm_g = self.spectrum.line_width/5
+                init_fwhm_l = self.spectrum.line_width/5
+
+                # Voigt profile
+                voigt_profile = Voigt1D(x_0 = init_x0, amplitude_L = init_amp, fwhm_L = init_fwhm_l, fwhm_G = init_fwhm_g)
+                model_profiles.append(voigt_profile)
+                
+            elif self.line_fit_model == 'Gaussian':
+                # Gaussian initial param guesses
+                init_amp = np.max(self.spectrum.flux_data[line_mask])
+                init_mean = line
+                init_stddev = self.spectrum.line_width / 10 
+
+                # Gaussian profile
+                gaussian_profile = Gaussian1D(amplitude = init_amp, mean = init_mean, stddev = init_stddev)
+                model_profiles.append(gaussian_profile)
+
+        # Create compound model
+        compound_model = model_profiles[0]
+        for profile in model_profiles[1:]:
+            compound_model += profile
+
+        return compound_model 
+    
+
+    def save_model_params(self, fitted_model):
+        """
+            DO ME
+        """
+        # Save fitted model params
+        model_params = []
+
+        if self.line_fit_model == 'Voigt':
+            # Check model type 
+            if isinstance(fitted_model, CompoundModel):
+                for component in fitted_model:
+                    model_params.append({
+                        'x_0': component.x_0.value,
+                        'amplitude_L': component.amplitude_L.value,
+                        'fwhm_L': component.fwhm_L.value,
+                        'fwhm_G': component.fwhm_G.value
+                    })
+            else:
+                model_params.append({
+                    'x_0': fitted_model.x_0.value,
+                    'amplitude_L': fitted_model.amplitude_L.value,
+                    'fwhm_L': fitted_model.fwhm_L.value,
+                    'fwhm_G': fitted_model.fwhm_G.value
+                })
+
+        elif self.line_fit_model == 'Gaussian':
+            # Check model type 
+            if isinstance(fitted_model, CompoundModel):
+                for component in fitted_model:
+                    model_params.append({
+                        'amplitude': component.amplitude.value,
+                        'mean': component.mean.value,
+                        'stddev': component.stddev.value
+                    })
+            else:
+                model_params.append({
+                    'amplitude': fitted_model.amplitude.value,
+                    'mean': fitted_model.mean.value,
+                    'stddev': fitted_model.stddev.value
+                })
+
+        # Save model params
+        curr_index = len(self.emission_lines.line_list) - 1
+        self.emission_lines.line_list[curr_index].model_params = model_params # MAYBE save params instead?
+        
+
+
+    def create_model_profile(self, model_params):
+        """
             Creates a Voigt1D profile from a given set of parameters from a pre-fitted profile
             Parameters: 
                         model_params: Voigt1D model parameters     
             Returns:
-                        composite_model: Voigt1D profile
-        '''
-        voigt_profiles = []
+                        compound_model: Voigt1D profile
+        """
+        model_profiles = []
 
         # Iterate through all parameters
         for params in model_params:
-            voigt_profile = Voigt1D(
-                x_0 = params['x_0'],
-                amplitude_L = params['amplitude_L'],
-                fwhm_L = params['fwhm_L'],
-                fwhm_G = params['fwhm_G']
-            )
-            voigt_profiles.append(voigt_profile)
+            if self.line_fit_model == 'Voigt':
+                model_profile = Voigt1D(
+                    x_0 = params['x_0'],
+                    amplitude_L = params['amplitude_L'],
+                    fwhm_L = params['fwhm_L'],
+                    fwhm_G = params['fwhm_G']
+                )
+            else:
+                model_profile = Gaussian1D(
+                    amplitude = params['amplitude'],
+                    mean = params['mean'],
+                    stddev = params['stddev'],
+                )
+            model_profiles.append(model_profile)
+            
 
         # Add models together
-        composite_model = voigt_profiles[0]
-        for voigt_profile in voigt_profiles[1:]:
-            composite_model += voigt_profile
+        compound_model = model_profiles[0]
+        for voigt_profile in model_profiles[1:]:
+            compound_model += voigt_profile
 
-        return composite_model
+        return compound_model
     
 
     def wavelength_edges(self, group_wavelength_data):
@@ -353,13 +422,13 @@ class FluxCalculator(object):
     
 
     def load_spectrum_data(self):
-        '''
+        """
             Load presaved spectrum data
             Parameters: 
                         None     
             Returns:
                         None
-        '''
+        """
         # Load saved doppler shift
         self.spectrum.doppler_shift = np.loadtxt(self.spectrum.doppler_dir)*(u.km/u.s)
 
@@ -375,13 +444,13 @@ class FluxCalculator(object):
 
 
     def delete_spectrum_data(self):
-        '''
+        """
             Delete all presaved spectrum data
             Parameters: 
                         None     
             Returns:
                         None
-        '''
+        """
         try:
             os.remove(self.spectrum.doppler_dir)
             os.remove(self.spectrum.emission_lines_dir)
@@ -410,14 +479,10 @@ class FluxCalculator(object):
         if event.key not in valid_keys:
             print("Invalid key input, select 'y' or 'n'")
 
-        if purpose == "Noise Detection":
+        elif purpose == "Noise Detection":
             self.noise_bool_list.append(event.key == 'y')
             plt.close()
 
         elif purpose == "Doppler Calculation":
             self.doppler_bool_list.append(event.key == 'y')
             plt.close()
-
-
-
-    

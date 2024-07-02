@@ -17,16 +17,19 @@ def new_main():
     star_name = 'NEWEX'
     min_wavelength = 1160
 
-    # User adjustable parameters
+    # Spectrum adjustments
     apply_smoothing = False # True if want to apply gaussian smoothing
-    fresh_start = False # True if first time running, or have already ran for a star and want to see final plot
+    line_fit_model = 'Gaussian' # 'Voigt' or 'Gaussian' fit
+
+    # User adjustable parameters
+    fresh_start = True # True if first time running, or have already ran for a star and want to see final plot
 
     # Load spectrum data and emission lines
     spectrum = SpectrumData(spectrum_dir, rest_dir, instrument, grating, star_name, min_wavelength, apply_smoothing)
     emission_lines = EmissionLines(spectrum)
 
     # Calculate flux
-    flux_calc = FluxCalculator(spectrum, emission_lines, fresh_start)
+    flux_calc = FluxCalculator(spectrum, emission_lines, fresh_start, line_fit_model)
 
     # Show final plot
     spectrum.final_spectrum_plot(emission_lines, flux_calc)

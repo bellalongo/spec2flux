@@ -1,6 +1,4 @@
 
-
-
 class EmissionLines(object):
     def __init__(self, spectrum):
         self.spectrum = spectrum

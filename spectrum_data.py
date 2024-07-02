@@ -12,10 +12,13 @@ import seaborn as sns
 
 class SpectrumData(object):
     def __init__(self, spectrum_dir, rest_dir, 
+                 observation, telescope,
                  instrument, grating, star_name, 
                  min_wavelength, smooth_data):
         
         self.spectrum_dir = spectrum_dir
+        self.observation = observation.upper()
+        self.telescope = telescope.upper()
         self.instrument = instrument.upper()
         self.grating = grating.upper()
         self.star_name = star_name.upper()
@@ -119,8 +122,8 @@ class SpectrumData(object):
         # Create file header (EDIT INFORMATION AS NEEDED)
         data_header = [("DATE", self.todays_date, "date flux was calculated"),
                         ("FILENAME", self.spectrum_dir, "name of the fits file used to for flux calc"),
-                        ("FILETYPE", "SCI", "file type of fits input file"),
-                        ("TELESCP", "HST", "telescope used to measure spectrum"),
+                        ("FILETYPE", self.observation, "observation type of fits input file"),
+                        ("TELESCP", self.telescope, "telescope used to measure spectrum"),
                         ("INSTRMNT", self.instrument, "active instrument to measure spectrum"),
                         ("GRATING", self.grating, "grating used to measure spectrum"),
                         ("TARGNAME", self.star_name, "name of star used in measurement"),

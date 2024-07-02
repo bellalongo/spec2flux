@@ -224,6 +224,6 @@ class SpectrumData(object):
 
         # Plot legend
         plt.legend([noisy_rest_lam, rest_lam, model_fit, trendline], 
-                            ["Noise Wavelength", "Rest Wavelength", "Voigt Profile", "Continuum"])
+                            ["Noise Wavelength", "Rest Wavelength", "Model Profile", "Continuum"])
         plt.savefig(self.final_plot_dir)
         plt.show()

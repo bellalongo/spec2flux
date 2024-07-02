@@ -71,7 +71,7 @@ class FluxCalculator(object):
 
             # Check if a model fit was successful
             if line.model_params:
-                # Create a voigt profile
+                # Create a model profile
                 model_profile = self.create_model_profile(line.model_params)
 
                 # Calculate profile continuum and flux
@@ -100,11 +100,11 @@ class FluxCalculator(object):
                     rest_lam = plt.axvline(x = wavelength, color = "#71816D", linewidth = 1, linestyle=((0, (5, 5))))
                 obs_lam = plt.axvline(x = line.obs_lam, color = "#D7816A", linewidth = 1)
 
-                # Check if a Voigt fit was successful
+                # Check if a model fit was successful
                 if line.model_params:
-                    # Plot voigt profile
-                    voigt_fit, = plt.plot(group_wavelength_data, model_profile(group_wavelength_data), color = "#231651")
-                    legend_params.append(voigt_fit), legend_strings.append("Voigt Fit")
+                    # Plot model profile
+                    model_fit, = plt.plot(group_wavelength_data, model_profile(group_wavelength_data), color = "#231651")
+                    legend_params.append(model_fit), legend_strings.append(f"{self.line_fit_model} Fit")
                 else:
                     continuum = self.emission_lines.split_create_trendline(group_wavelength_data, group_flux_data)
                     total_sumflux = np.sum(group_flux_data*(w1-w0))
@@ -280,7 +280,11 @@ class FluxCalculator(object):
 
     def create_model(self, group):
         """
-            DO ME
+            Creates a model profile for a given emission line group
+            Parameters: 
+                        group: emission line group of wavelengths
+            Returns:
+                        compound_model: combined model profile
         """
         model_profiles = []
 
@@ -322,7 +326,11 @@ class FluxCalculator(object):
 
     def save_model_params(self, fitted_model):
         """
-            DO ME
+            Saves a fitted model's parameters for future use in line_list
+            Parameters: 
+                        fitted_model: emission line group's fitted model
+            Returns:
+                        None
         """
         # Save fitted model params
         model_params = []
@@ -369,11 +377,11 @@ class FluxCalculator(object):
 
     def create_model_profile(self, model_params):
         """
-            Creates a Voigt1D profile from a given set of parameters from a pre-fitted profile
+            Creates a model profile from a given set of parameters from a pre-fitted profile
             Parameters: 
-                        model_params: Voigt1D model parameters     
+                        model_params: model parameters     
             Returns:
-                        compound_model: Voigt1D profile
+                        compound_model: modile profile
         """
         model_profiles = []
 

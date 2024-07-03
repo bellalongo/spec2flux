@@ -49,12 +49,12 @@ class SpectrumData(object):
             self.wavelength_data, self.flux_data, self.error_data = smooth_data(1)
         
         # Spectrum filenames
-        self.doppler_dir = './doppler/' + star_name + '_doppler.txt'
-        self.emission_lines_dir = './emission_lines/' + star_name + '_lines.json'
-        self.fits_dir = './flux/' + star_name.lower() + '.fits' # adjust filenames
-        self.ecsv_dir = './flux/' + star_name.lower() + '.ecsv'
-        self.csv_dir = './flux/' + star_name.lower() + '.csv' # make it so they're added to a CSV
-        self.final_plot_dir = './plots/' + star_name.lower() + '_final_plot.png'
+        self.doppler_dir = f'./doppler/{star_name.lower()}_doppler.txt'
+        self.emission_lines_dir = f'./emission_lines/{star_name.lower()}_lines.json'
+        self.fits_dir = f'./flux/{star_name.lower()}.fits'
+        self.ecsv_dir = f'./flux/{star_name.lower()}.ecsv'
+        self.csv_dir = f'./flux/{star_name.lower()}.csv'
+        self.final_plot_dir = f'./plots/{star_name.lower()}_final_plot.png' + star_name.lower() + '_final_plot.png'
 
         # Doppler shift
         self.doppler_shift = None # will be updated in flux_calculator.py

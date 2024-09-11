@@ -84,12 +84,11 @@ class FluxCalculator(object):
             else:
                 # Plot basics
                 legend_params, legend_strings = [], []
-                sns.set_style("darkgrid")
-                sns.set_theme(rc={'axes.facecolor':'#F8F5F2'})
+                sns.set_style("whitegrid")
                 fig = plt.figure(figsize=(14,7))
                 ax = fig.add_subplot()
                 plt.title(f"Flux vs Wavelength for {line.ion}")
-                fig.suptitle("Click 'y' if is noise, 'n' if not", fontweight='bold')
+                fig.suptitle("Click 'y' if is noise, 'n' if not", fontweight='bold', fontsize = 15)
                 plt.xlabel('Wavelength (Å)', fontsize =12)
                 plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ Å$^{-1}$)', fontsize=12)
                 cid = fig.canvas.mpl_connect('key_press_event', lambda event: self.on_key(event, 'Noise Detection'))
@@ -245,11 +244,11 @@ class FluxCalculator(object):
                 self.save_model_params(fitted_model)
 
                 # Plot basics
-                sns.set_theme()
-                fig = plt.figure(figsize=(14,7), facecolor="white")
+                sns.set_style("whitegrid")
+                fig = plt.figure(figsize=(14,7))
                 ax = fig.add_subplot()
                 plt.title(f"Flux vs Wavelength for {ion}")
-                fig.suptitle("Click 'y' if should be used for doppler calculation, 'n' if not", fontweight='bold')
+                fig.suptitle("Click 'y' if should be used for doppler calculation, 'n' if not", fontweight='bold', fontsize = 15)
                 plt.xlabel('Wavelength (Å)', fontsize =12)
                 plt.ylabel('Flux (erg s$^{-1}$ cm$^{-2}$ Å$^{-1}$)', fontsize=12)
                 cid = fig.canvas.mpl_connect('key_press_event', lambda event: self.on_key(event, 'Doppler Calculation'))

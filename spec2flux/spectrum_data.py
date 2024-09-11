@@ -198,8 +198,7 @@ class SpectrumData(object):
         min_peak = min(self.flux_data)
 
         # Create a basic plot
-        sns.set_style("darkgrid")
-        sns.set_theme(rc={'axes.facecolor':'#F5F5F5'})
+        sns.set_style("whitegrid")
         fig = plt.figure(figsize=(14,7))
         ax = fig.add_subplot()
         plt.title("Flux vs Wavelength for " + self.star_name)
@@ -230,9 +229,9 @@ class SpectrumData(object):
             # Plot rest wavelengths
             for curr_rest in line.group_lam:
                 if line.noise_bool:
-                    noisy_rest_lam = plt.axvline(x = curr_rest, color = '#B5CA8D', linewidth = 1.5, linestyle=((0, (5, 5))))
+                    noisy_rest_lam = plt.axvline(x = curr_rest, color = '#92B257', linewidth = 1.5, linestyle=((0, (5, 5))))
                 else:
-                    rest_lam = plt.axvline(x = curr_rest, color = '#70944C', linewidth = 1.5, linestyle=((0, (5, 5))))
+                    rest_lam = plt.axvline(x = curr_rest, color = '#5D7A3E', linewidth = 1.5, linestyle=((0, (5, 5))))
 
         # Plot legend
         plt.legend([noisy_rest_lam, rest_lam, model_fit, trendline], 

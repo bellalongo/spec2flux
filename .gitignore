@@ -48,3 +48,6 @@ notebooks(no git)
 build
 dist
 spec2flux.egg-info
+
+# Docs stuff
+docs_sphinx

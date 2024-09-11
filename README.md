@@ -68,7 +68,7 @@ All lines not selected for Doppler calculation will appear, some with a Voigt pr
 **Not noise:**
 ![Not noise example](https://github.com/bellalongo/spec2flux/blob/main/readme_pics/not_noise.png?raw=true)
 </br>
-</br>
+
 **Noise:**
 ![Not noise example](https://github.com/bellalongo/spec2flux/blob/main/readme_pics/noise.png?raw=true)
 
@@ -78,7 +78,10 @@ After all emission line selections and calculations have been made, a final plot
 ![final plot example](https://github.com/bellalongo/spec2flux/blob/main/readme_pics/final_plot.png?raw=true)
 </br>
 
+**Zoomed in:**
+![zoom example](https://github.com/bellalongo/spec2flux/blob/main/readme_pics/zoom.png?raw=true)
 
+</br>
 
 ## Using the data:
 Header contains:

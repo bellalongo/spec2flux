@@ -21,67 +21,139 @@ The script accomplishes the task of calculating flux by:
 * [![numpy][numpy-pic]][numpy-url]
 * [![pandas][pandas-pic]][pandas-url]
 
+</br>
+</br>
 
-## Installation
-1. Clone the repository </br>
 
+## Pip Installation
+1. **Pip install the repository in your desired directory.**
+   
    ```sh
-   git clone https://github.com/bellalongo/spec2flux.git
+      pip install spec2flux
    ```
-2. Navigate to docs/tutorial.py and adjust spectrum specs, making sure the spectrum is in the docs directory.
-3. Adjust the 'fresh_start' parameter depending on whether you want to adjust calculations on a new run </br>
-   (if first run, set to True)
+
+   
+2. **Create a `main.py`, which will used to put the package attributes.**
+
+   
+3. **Ensure your files for the DEM lines, airglow, and the spectrum which will used to calculate the flux are in your directory.**
+   ```bash
+      project-directory/
+      ├── main.py
+      ├── DEM_goodlinelist.csv
+      ├── airglow.csv
+      ├── spectrum.fits
+      ```
+
+   
+4. **Make your `main.py` resemble the following:**
+   ```python
+      import spec2flux
+      
+      
+      def main():
+          # Spectrum details (adjust me with each star)
+          spectrum_dir = 'spectrum-spec.fits'
+          rest_dir = 'DEM_goodlinelist.csv'
+          airglow_dir = 'airglow.csv'
+          observation = 'sci' # SCI only
+          telescope = 'hst' # HST only
+          instrument = 'stis' # STIS or COS only
+          grating = 'e140m' # L or M grating only
+          star_name = 'NEWEX'
+          min_wavelength = 1160
+      
+          # Spectrum adjustments
+          apply_smoothing = False # True if want to apply gaussian smoothing
+          line_fit_model = 'Voigt' # 'Voigt' or 'Gaussian' fit
+      
+          # User adjustable parameters
+          fresh_start = True # True if first time running, or have already ran for a star and want to see final plot
+      
+          # Check inputs
+          spec2flux.InputCheck(spectrum_dir, rest_dir, airglow_dir, observation, telescope, instrument, grating, star_name, 
+                     min_wavelength, apply_smoothing, line_fit_model, fresh_start)
+      
+          # Load spectrum data and emission lines
+          spectrum = spec2flux.SpectrumData(spectrum_dir, rest_dir, airglow_dir, observation, telescope, instrument, grating, star_name, 
+                                  min_wavelength, apply_smoothing)
+          emission_lines = spec2flux.EmissionLines(spectrum)
+      
+          # Calculate flux
+          flux_calc = spec2flux.FluxCalculator(spectrum, emission_lines, fresh_start, line_fit_model)
+      
+          # Show final plot
+          spectrum.final_spectrum_plot(emission_lines, flux_calc)
+      
+      
+      if __name__ == '__main__':
+          main()
+   ```
+
+   
+5. **Run `main.py`.**
    ```sh
-   fresh_start = True
-   ```
-3. Adjust the 'gaussian_smoothing' parameter depending on whether you to smooth the spectrum </br>
-   (if first run, set to False)
-   ```sh
-   gaussian_smoothing = False
-   ```
-5. Run the script:
-    ```sh
-   python tutorial.py
+      python main.py
    ```
 
-## Adjustments
-The script can be run on its own without any adjustments, but if the star is a little finicky:
-### tutorial.py
-* adjust the mask used to isolate emission lines
-* edit header if want different header information
-### emission_lines.py
-* adjust peak_width in 'peak_width_finder'
-* adjust tolerance used to group emission lines in 'grouping_emission_lines'
-* adjust voigt fit initial parameters
-  
+   
+6. **Select "best" doppler shift candidates.** </br>
+   A series of plots will appear, click 'y' if the plot is an eligible candidate for doppler shift, 'n' if it is not.
+   
+   <div align="center">
+       <img src="https://github.com/bellalongo/spec2flux/blob/main/readme_pics/doppler_calc.png?raw=true" alt="Doppler calculation example" width="600">
+       <p>Figure 1: This is a good example because the Doppler shift is consistent between both emission lines, with minimal noise.</p>
+   </div>
 
 
-## Doppler shift calculation
-A plot will appear of the 'best' emission lines, with a Voigt fit fitted to it. Click 'y' if you think the line should be used to calculate Doppler shift (these lines will automatically not be considered as noise), and 'n' if the emission line if not. </br>
+7. **After iterating through all the doppler shift candidates, plots will appear for the noise selection portion.** </br>
+   To select if the current plot is noise or not, click 'y' if the plot is noise and 'n' if the plot is not noise.
 
-![doppler calculation example](https://github.com/bellalongo/spec2flux/blob/main/readme_pics/doppler_calc.png?raw=true)
-</br>
+   <table>
+     <tr>
+       <td align="center">
+         <img src="https://github.com/bellalongo/spec2flux/blob/main/readme_pics/not_noise.png?raw=true" alt="Not noise example" width="400">
+         <p>Figure 2: This plot is not noisy because the emission lines are well-defined at the specified rest wavelengths.</p>
+       </td>
+       <td align="center">
+         <img src="https://github.com/bellalongo/spec2flux/blob/main/readme_pics/noise.png?raw=true" alt="Noise example" width="400">
+         <p>Figure 3: This plot is noisy because the emission lines at the specified rest wavelength are not well-defined.</p>
+       </td>
+     </tr>
+   </table>
 
-## Determining if noise
-All lines not selected for Doppler calculation will appear, some with a Voigt profile fitted if possible to be selected as noise or not noise. Click 'y' if you think the line is noise, and 'n' if the line is not noise. </br>
+8. **After all emission lines are iterated through, a final plot will appear**
 
-**Not noise:**
-![Not noise example](https://github.com/bellalongo/spec2flux/blob/main/readme_pics/not_noise.png?raw=true)
-</br>
+   <div align="center">
+       <img src="https://github.com/bellalongo/spec2flux/blob/main/readme_pics/final_plot.png?raw=true" alt="Final plot example" width="600">
+       <p>Figure 4: Plot of the entire spectrum with the continuum, profile fits, and wavelengths marked.</p>
+   </div>
+   
+   </br>
+   <div align="center">
+       <img src="https://github.com/bellalongo/spec2flux/blob/main/readme_pics/zoom.png?raw=true" alt="Zoomed plot example" width="600">
+       <p>Figure 5: Final plot zoomed in.</p>
+   </div>
+   </br>
 
-**Noise:**
-![Not noise example](https://github.com/bellalongo/spec2flux/blob/main/readme_pics/noise.png?raw=true)
-
-## Final plot
-After all emission line selections and calculations have been made, a final plot will appear showing the spectrum and each labeled emission line. Matplotlib gives the ability to zoom into the plot, so please do so to double-check the lines. This plot is saved to the 'plots' folder. </br>
-
-![final plot example](https://github.com/bellalongo/spec2flux/blob/main/readme_pics/final_plot.png?raw=true)
-</br>
-
-**Zoomed in:**
-![zoom example](https://github.com/bellalongo/spec2flux/blob/main/readme_pics/zoom.png?raw=true)
-
-</br>
+9. **After running the script, your directory will now look like the following:**
+      ```bash
+      project-directory/
+      ├── main.py
+      ├── DEM_goodlinelist.csv
+      ├── airglow.csv
+      ├── spectrum.fits
+      ├── doppler/
+      │   ├── newex_doppler.txt
+      ├── emission_lines/
+      │   ├── newex_lines.json
+      ├── flux/
+      │   ├── newex.csv
+          ├── newex.ecsv
+          ├── newex.fits
+      ├── plots/
+      │   ├── newex_final_plot.png
+      ```
 
 ## Using the data:
 Header contains:
@@ -97,16 +169,9 @@ Header contains:
 * WIDTHPXL: average emission line peak width in pixels
 * UPPRLIMIT: upper limit used for noise
 
-
-### Using the data:
-ECSV Data: File columns are Ion, Rest Wavelength, Flux, Error, Blended Line, each row representing a grouped emission line.  <br />
-FITS Data: FITS Table containing the same data as the ECSV file. <br />
+ECSV + CSV Data: File columns are Ion, Rest Wavelength, Flux, Error, Blended Line, each row representing a grouped emission line.  <br />
+FITS Data: FITS Table contains the same data as the ECSV file. <br />
 Note: Noise is marked as having the negative of the upper limit (3*error) as the flux and an error of 0. <br />
-
-
-  
-
-
 
 
 
@@ -122,3 +187,4 @@ Note: Noise is marked as having the negative of the upper limit (3*error) as the
 [numpy-pic]: https://img.shields.io/badge/numpy-blue?style=for-the-badge
 [pandas-url]: https://pandas.pydata.org/docs/
 [pandas-pic]: https://img.shields.io/badge/pandas-purple?style=for-the-badge
+   

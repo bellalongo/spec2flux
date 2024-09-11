@@ -5,6 +5,8 @@ from datetime import date
 import math
 import matplotlib.pyplot as plt
 import numpy as np
+import os
+from os.path import exists
 import pandas as pd
 from scipy.ndimage import gaussian_filter
 import seaborn as sns
@@ -38,7 +40,7 @@ class SpectrumData(object):
         self.rest_lam_data = pd.DataFrame(data)
 
         # Load airglow
-        airglow_data = pd.read_csv("airglow.csv") 
+        airglow_data = pd.read_csv("../spec2flux/airglow.csv") # CHECK ME
         self.airglow_df = pd.DataFrame(airglow_data)
 
         # Get average peak width
@@ -47,14 +49,21 @@ class SpectrumData(object):
         # Check if data needs to be smoothed
         if smooth_data:
             self.wavelength_data, self.flux_data, self.error_data = smooth_data(1)
+
+        # Check if spectrum folders exist
+        if not exists('doppler'):
+            os.makedirs('doppler')
+            os.makedirs('emission_lines')
+            os.makedirs('flux')
+            os.makedirs('plots')
         
         # Spectrum filenames
-        self.doppler_dir = f'./doppler/{star_name.lower()}_doppler.txt'
-        self.emission_lines_dir = f'./emission_lines/{star_name.lower()}_lines.json'
-        self.fits_dir = f'./flux/{star_name.lower()}.fits'
-        self.ecsv_dir = f'./flux/{star_name.lower()}.ecsv'
-        self.csv_dir = f'./flux/{star_name.lower()}.csv'
-        self.final_plot_dir = f'./plots/{star_name.lower()}_final_plot.png' + star_name.lower() + '_final_plot.png'
+        self.doppler_dir = f'doppler/{star_name.lower()}_doppler.txt'
+        self.emission_lines_dir = f'emission_lines/{star_name.lower()}_lines.json'
+        self.fits_dir = f'flux/{star_name.lower()}.fits'
+        self.ecsv_dir = f'flux/{star_name.lower()}.ecsv'
+        self.csv_dir = f'flux/{star_name.lower()}.csv'
+        self.final_plot_dir = f'plots/{star_name.lower()}_final_plot.png' + star_name.lower() + '_final_plot.png'
 
         # Doppler shift
         self.doppler_shift = None # will be updated in flux_calculator.py
@@ -73,7 +82,7 @@ class SpectrumData(object):
         if 'L' in self.grating:
             peak_width = 5.0 # NOTE! adjust me as seems fit!
         else:
-            peak_width = 0.7
+            peak_width = 0.5
             
         flux_range = 2*peak_width
 

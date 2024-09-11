@@ -1,8 +1,3 @@
-# DELETE ME ONCE IS A PIP PACKAGE!!
-import sys 
-sys.path.insert(0, '../')
-
-
 import spec2flux
 
 

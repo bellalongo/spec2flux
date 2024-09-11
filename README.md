@@ -1,13 +1,13 @@
-# fluxpal
+# spec2flux
 
 
-## About fluxpal
-The goal of fluxpal is to accurately calculate the emission line flux of lines in the Far Ultraviolet(FUV) range. This range contains information that can help clue in on exoplanetary atmospheres with the measurements providing insight into FUV radiation from host stars. Integrating UV spectra with X-ray data allows us to estimate the stellar corona, adding to the toolkit of exoplanet atmosphere data. 
+## About spec2flux
+Spec2flux (Spectra to Flux) aims to accurately calculate the emission line flux of lines in the Far Ultraviolet (FUV) range. This range contains information that can help clue in on exoplanetary atmospheres with the measurements providing insight into FUV radiation from host stars. Integrating UV spectra with X-ray data allows us to estimate the stellar corona, adding to the toolkit of exoplanet atmosphere data. 
 
 
 ## How it works
 The script accomplishes the task of calculating flux by:
-1. Grouping emission lines using a preset tolerance, which can be adjusted if using a different DEM (CSV) file.
+1. Grouping emission lines using a preset tolerance, which can be adjusted if using a different DEM file.
 2. Calculating the Doppler shift by fitting a composite Voigt profile to the strongest emission lines, and comparing Voigt peaks to rest wavelength to calculate.
 3. Iterating through each line, determining if noise, and then calculating the flux either using the Voigt profile or the original data.
 4. Presents a final plot of all of the final emission lines, and exports the calculations as a FITS and ECSV file.
@@ -41,12 +41,12 @@ The script accomplishes the task of calculating flux by:
    ```
 5. Run the script:
     ```sh
-   python main.py spectra/ex_fits_file.fits 'instrument' 'grating' 'star name'
+   python tutorial.py
    ```
 
 ## Adjustments
 The script can be run on its own without any adjustments, but if the star is a little finicky:
-### main.py
+### tutorial.py
 * adjust the mask used to isolate emission lines
 * edit header if want different header information
 ### emission_lines.py
@@ -59,18 +59,18 @@ The script can be run on its own without any adjustments, but if the star is a l
 ## Doppler shift calculation
 A plot will appear of the 'best' emission lines, with a Voigt fit fitted to it. Click 'y' if you think the line should be used to calculate Doppler shift (these lines will automatically not be considered as noise), and 'n' if the emission line if not. </br>
 
-![doppler calculation example](https://github.com/bellalongo/Flux-and-Line-Measurement-Script/blob/main/readme_pics/doppler_calc.png?raw=true)
+![doppler calculation example](https://github.com/bellalongo/spec2flux/blob/main/readme_pics/doppler_calc.png?raw=true)
 </br>
 
 ## Determining if noise
 All lines not selected for Doppler calculation will appear, some with a Voigt profile fitted if possible to be selected as noise or not noise. Click 'y' if you think the line is noise, and 'n' if the line is not noise. </br>
 
 **Not noise:**
-![Not noise example](https://github.com/bellalongo/Flux-and-Line-Measurement-Script/blob/main/readme_pics/not_noise.png?raw=true)
+![Not noise example](https://github.com/bellalongo/spec2flux/blob/main/readme_pics/not_noise.pngraw=true)
 </br>
 </br>
 **Noise:**
-![Not noise example](https://github.com/bellalongo/Flux-and-Line-Measurement-Script/blob/main/readme_pics/noise.png?raw=true)
+![Not noise example](https://github.com/bellalongo/spec2flux/blob/main/readme_pics/noise.png?raw=true)
 
 ## Final plot
 After all emission line selections and calculations have been made, a final plot will appear showing the spectrum and each labeled emission line. Matplotlib gives the ability to zoom into the plot, so please do so to double-check the lines. This plot is saved to the 'plots' folder. </br>

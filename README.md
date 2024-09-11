@@ -26,7 +26,7 @@ The script accomplishes the task of calculating flux by:
 1. Clone the repository </br>
 
    ```sh
-   git clone https://github.com/bellalongo/fluxpal.git
+   git clone https://github.com/bellalongo/spec2flux.git
    ```
 2. Move the fits file being used to calculate flux into the 'spectra' folder.
 3. Adjust the 'fresh_start' parameter depending on whether you want to adjust calculations on a new run </br>
@@ -66,7 +66,7 @@ A plot will appear of the 'best' emission lines, with a Voigt fit fitted to it. 
 All lines not selected for Doppler calculation will appear, some with a Voigt profile fitted if possible to be selected as noise or not noise. Click 'y' if you think the line is noise, and 'n' if the line is not noise. </br>
 
 **Not noise:**
-![Not noise example](https://github.com/bellalongo/spec2flux/blob/main/readme_pics/not_noise.pngraw=true)
+![Not noise example](https://github.com/bellalongo/spec2flux/blob/main/readme_pics/not_noise.png?raw=true)
 </br>
 </br>
 **Noise:**
@@ -75,7 +75,7 @@ All lines not selected for Doppler calculation will appear, some with a Voigt pr
 ## Final plot
 After all emission line selections and calculations have been made, a final plot will appear showing the spectrum and each labeled emission line. Matplotlib gives the ability to zoom into the plot, so please do so to double-check the lines. This plot is saved to the 'plots' folder. </br>
 
-![final plot example](https://github.com/bellalongo/Flux-and-Line-Measurement-Script/blob/main/plots/example_final_plot.png?raw=true)
+![final plot example](https://github.com/bellalongo/spec2flux/blob/main/readme_pics/final_plot.png?raw=true)
 </br>
 
 

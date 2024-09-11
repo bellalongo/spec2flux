@@ -43,3 +43,8 @@ spectra/
 
 # Testing
 notebooks(no git)
+
+# Pip stuff
+build
+dist
+spec2flux.egg-info

@@ -13,7 +13,7 @@ import seaborn as sns
 
 
 class SpectrumData(object):
-    def __init__(self, spectrum_dir, rest_dir, 
+    def __init__(self, spectrum_dir, rest_dir, airglow_dir,
                  observation, telescope,
                  instrument, grating, star_name, 
                  min_wavelength, smooth_data):
@@ -40,7 +40,7 @@ class SpectrumData(object):
         self.rest_lam_data = pd.DataFrame(data)
 
         # Load airglow
-        airglow_data = pd.read_csv("../spec2flux/airglow.csv") # CHECK ME
+        airglow_data = pd.read_csv(airglow_dir)
         self.airglow_df = pd.DataFrame(airglow_data)
 
         # Get average peak width

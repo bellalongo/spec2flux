@@ -10,6 +10,7 @@ def main():
     # Spectrum details (adjust me with each star)
     spectrum_dir = 'hlsp_muscles_hst_stis_tau_ceti_e140m_v1_component-spec.fits'
     rest_dir = 'DEM_goodlinelist.csv'
+    airglow_dir = 'airglow.csv'
     observation = 'sci' # SCI only
     telescope = 'hst' # HST only
     instrument = 'stis' # STIS or COS only
@@ -25,11 +26,11 @@ def main():
     fresh_start = True # True if first time running, or have already ran for a star and want to see final plot
 
     # Check inputs
-    spec2flux.InputCheck(spectrum_dir, rest_dir, observation, telescope, instrument, grating, star_name, 
+    spec2flux.InputCheck(spectrum_dir, rest_dir, airglow_dir, observation, telescope, instrument, grating, star_name, 
                min_wavelength, apply_smoothing, line_fit_model, fresh_start)
 
     # Load spectrum data and emission lines
-    spectrum = spec2flux.SpectrumData(spectrum_dir, rest_dir, observation, telescope, instrument, grating, star_name, 
+    spectrum = spec2flux.SpectrumData(spectrum_dir, rest_dir, airglow_dir, observation, telescope, instrument, grating, star_name, 
                             min_wavelength, apply_smoothing)
     emission_lines = spec2flux.EmissionLines(spectrum)
 

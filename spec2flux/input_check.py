@@ -2,7 +2,7 @@ from os.path import exists
 
 
 class InputCheck(object):
-    def __init__(self, spectrum_dir, rest_dir, 
+    def __init__(self, spectrum_dir, rest_dir, airglow_dir,
                  observation, telescope,
                  instrument, grating, 
                  star_name, 
@@ -12,6 +12,7 @@ class InputCheck(object):
 
         self.spectrum_dir = spectrum_dir
         self.rest_dir = rest_dir
+        self.airglow_dir = airglow_dir
         self.observation = observation.upper()
         self.telescope = telescope.upper()
         self.instrument = instrument.upper()
@@ -49,6 +50,9 @@ class InputCheck(object):
         
         if not isinstance(self.rest_dir, str):
             raise TypeError(f"Variable rest_dir must be of type 'str'")
+        
+        if not isinstance(self.airglow_dir, str):
+            raise TypeError(f"Variable airglow_dir must be of type 'str'")
 
         # Check values
         if not exists(self.spectrum_dir):
@@ -56,6 +60,9 @@ class InputCheck(object):
         
         if not exists(self.rest_dir):
             raise FileNotFoundError(f"The file for rest_dir: {self.rest_dir} does not exist")
+        
+        if not exists(self.airglow_dir):
+            raise FileNotFoundError(f"The file for rest_dir: {self.airglow_dir} does not exist")
         
     
     def check_spectrum_data(self):

@@ -2,7 +2,7 @@
 
 
 ## About spec2flux
-Spec2flux (Spectra to Flux) aims to accurately calculate the emission line flux of lines in the Far Ultraviolet (FUV) range. This range contains information that can help clue in on exoplanetary atmospheres with the measurements providing insight into FUV radiation from host stars. Integrating UV spectra with X-ray data allows us to estimate the stellar corona, adding to the toolkit of exoplanet atmosphere data. 
+Spec2flux (Spectrum to Flux) aims to accurately calculate the emission line flux of lines in the Far Ultraviolet (FUV) range. This range contains information that can help clue in on exoplanetary atmospheres with the measurements providing insight into FUV radiation from host stars. Integrating UV spectra with X-ray data allows us to estimate the stellar corona, adding to the toolkit of exoplanet atmosphere data. 
 
 
 ## How it works
@@ -28,7 +28,7 @@ The script accomplishes the task of calculating flux by:
    ```sh
    git clone https://github.com/bellalongo/spec2flux.git
    ```
-2. Move the fits file being used to calculate flux into the 'spectra' folder.
+2. Navigate to docs/tutorial.py and adjust spectrum specs, making sure the spectrum is in the docs directory.
 3. Adjust the 'fresh_start' parameter depending on whether you want to adjust calculations on a new run </br>
    (if first run, set to True)
    ```sh

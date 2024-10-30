@@ -28,7 +28,13 @@ class SpectrumData(object):
         self.todays_date = str(date.today())
 
         # Fetch data
-        data = fits.getdata(spectrum_dir)
+        if spectrum_dir.endswith('.fits'):
+            data = fits.getdata(self.spectrum_dir)
+        elif spectrum_dir.endswith('.ecsv'):
+            data = Table.read(self.spectrum_dir, format='ascii.ecsv')
+        else:
+            raise ValueError("File format not supported. Please provide a .fits or .ecsv file.")
+
         wavelength_data, flux_data, error_data = data['WAVELENGTH'], data['FLUX'], data['ERROR']
 
         # Mask wavelengths under min_wavelength

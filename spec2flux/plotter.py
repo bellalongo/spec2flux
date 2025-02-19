@@ -1,7 +1,9 @@
-# plotting.py
+from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button
 import seaborn as sns
+
+from .model_fitter import ModelFitter
 
 
 # ------------------------------
@@ -14,6 +16,8 @@ class Plotter:
         """
         self.spectrum = spectrum
         self.emission_lines = emission_lines
+
+        self.model_fitter = ModelFitter(spectrum)
         
         # Intitialize selected lines to be empty
         self.selected_lines = {} 
@@ -25,23 +29,38 @@ class Plotter:
     # ------------------------------
     # Private Helper Functions
     # ------------------------------
-    def _setup_figure(self, title, xlabel, ylabel, show_instructions=True):
+    def _setup_figure(self, title, xlabel, ylabel, instructions):
         """
 
         """
         sns.set_style("whitegrid")
         self.fig, self.ax = plt.subplots(figsize=(15, 8))
         
-        self.ax.set_title(title, fontsize=14)
+        self.ax.set_title(title, fontsize=16, pad = 10, fontweight = 'bold', y = -0.14)
         self.ax.set_xlabel(xlabel, fontsize=12)
         self.ax.set_ylabel(ylabel, fontsize=12)
+
+        # Calculate plot bounds
+        wavelength_mask = (self.spectrum.wavelength_data > 1250) & (
+            self.spectrum.wavelength_data < self.spectrum.max_wavelength)
+        max_peak = max(self.spectrum.flux_data[wavelength_mask])
+        min_peak = min(self.spectrum.flux_data)
+
+        # Set axis limits
+        self.ax.set_ylim(min_peak, max_peak * 1.5)
+        self.ax.set_xlim(self.spectrum.min_wavelength, self.spectrum.max_wavelength)
         
-        if show_instructions:
-            self.fig.text(0.02, 0.98, 
-                    "Click on lines to select/deselect for doppler calculation\n" +
-                    "Pink = Not Selected, Red = Selected\n" +
-                    "Use matplotlib toolbar to zoom/pan",
-                    fontsize=10, verticalalignment='top')
+        # Add instructions as subtitle
+        if instructions: 
+            subtitle = (
+                f"Click on lines to select/deselect for {instructions.lower()} calculation\n"
+                f"Orange = {'Not Selected' if instructions == 'Doppler' else 'Noise'}, "
+                f"Magenta = {'Selected' if instructions == 'Doppler' else 'Not Noise'}\n"
+                "Use matplotlib toolbar to zoom/pan"
+            )
+                
+            self.fig.suptitle(subtitle, fontsize=12, y=0.97)
+
         
         return self.fig, self.ax
 
@@ -52,12 +71,12 @@ class Plotter:
         # Add Done button
         ax_done = plt.axes([0.81, 0.01, 0.1, 0.04])
         self.done_button = Button(ax_done, 'Done', color='lightgray')
-        self.done_button.on_clicked(self.on_done)
+        self.done_button.on_clicked(self._on_done)
 
         # Connect picker event
         self.fig.canvas.mpl_connect('pick_event', self._on_pick)
 
-    def on_done(self, event):
+    def _on_done(self, event):
         """
 
         """
@@ -75,41 +94,174 @@ class Plotter:
                 linewidth=1, color='gray', alpha=0.7)
         ax.grid(True, alpha=0.3)
 
-    def _plot_models_and_lines(self, ax, fitted_models):
+    def _plot_doppler_data(self, ax):
         """
 
         """
-        for group, data in fitted_models.items():
-            fitted_model = data['model']
-            mask = data['mask']
-            ion = data['ion']
-
-            # Plot the fitted model
-            ax.plot(self.spectrum.wavelength_data[mask], 
-                   fitted_model(self.spectrum.wavelength_data[mask]), 
-                   color="#111D4A", alpha=0.8)
-            
-            # Plot the selectable lines for each wavelength
-            for wavelength in group:
-                # Create a wider invisible line for easier clicking
-                click_line = ax.axvline(x=wavelength, color='none', linewidth=10, picker=True)
-                # Create the visible line
-                visible_line = ax.axvline(x=wavelength, color='pink', linestyle='--', 
-                                        linewidth=2, alpha=0.8)
+        # Iterate through each ion in the line list
+        for ion in self.emission_lines.line_list:
+            # Iterate through each emission line in this ion's group
+            for emission_line in self.emission_lines.line_list[ion].values():
+                # Create mask for the emission line group
+                group_mask = (
+                    (self.spectrum.wavelength_data > emission_line.group_lam[0] - self.spectrum.line_width) &
+                    (self.spectrum.wavelength_data < emission_line.group_lam[-1] + self.spectrum.line_width)
+                )
                 
-                self.selected_lines[wavelength] = {
-                    'click_line': click_line,
-                    'visible_line': visible_line,
-                    'selected': False,
-                    'ion': ion
-                }
+                # If there are model parameters, create and plot the model
+                if emission_line.model_params:
+                    # Create the model using the saved parameters
+                    model = self.model_fitter.create_model_profile(emission_line.model_params)
+                    
+                    # Plot the fitted model
+                    fitted_model, = ax.plot(
+                        self.spectrum.wavelength_data[group_mask],
+                        model(self.spectrum.wavelength_data[group_mask]),
+                        color="#242325",
+                        alpha=0.8
+                    )
+                    
+                    # Plot the lines for each wavelength in the group
+                    for i, wavelength in enumerate(emission_line.group_lam):
+                        # Plot observed wavelength
+                        if self.spectrum.line_fit_model == 'Voigt':
+                            obs_wavelength = emission_line.model_params[i]['x_0']
+                        else:
+                            obs_wavelength = emission_line.model_params[i]['mean']
+                            
+                        # Calculate y-range for the observed wavelength line
+                        local_flux = self.spectrum.flux_data[group_mask]
+                        local_max = max(local_flux)
+                        local_min = min(local_flux)
+                        y_range = local_max - local_min
+                        
+                        # Draw line segment instead of full vertical line
+                        obs_line = ax.plot(
+                            [obs_wavelength, obs_wavelength],
+                            [local_min - 0.1 * y_range, local_max + 0.1 * y_range],
+                            color="#BBB891",
+                            linewidth=1.5,
+                            alpha=0.8,
+                            solid_capstyle='butt'
+                        )[0]
 
-    def _interactive_plot(self, title, xlabel, ylabel, show_instructions=True):
+                        # Create a wider invisible line for easier clicking
+                        click_line = ax.axvline(
+                            x=wavelength,
+                            color='none',
+                            linewidth=10,
+                            picker=True
+                        )
+                        
+                        # Create the visible line
+                        visible_line = ax.axvline(
+                            x=wavelength,
+                            color='#DC965A',
+                            linestyle='--',
+                            linewidth=2,
+                            alpha=0.8
+                        )
+                        
+                        # Store the line references and metadata
+                        self.selected_lines[wavelength] = {
+                            'click_line': click_line,
+                            'visible_line': visible_line,
+                            'selected': False,
+                            'ion': ion,
+                            'emission_line': emission_line
+                        }
+        proxy_visible_line = Line2D([0], [0], color='#8B1E3F', linestyle='--', linewidth=2, alpha=0.8)
+        ax.legend([fitted_model, visible_line, proxy_visible_line, obs_line], ['Model Fit', 
+                                                                               'Rest Wavelength (Not Doppler Candidate)', 
+                                                                               'Rest Wavelength (Doppler Candidate)',
+                                                                               'Observed Wavelength'])
+
+    def _plot_noise_data(self, ax):
+        """
+
+        """
+        # Iterate through each ion in the line list
+        for ion in self.emission_lines.line_list:
+            # Iterate through each emission line in this ion's group
+            for emission_line in self.emission_lines.line_list[ion].values():
+                # Create mask for the emission line group
+                group_mask = (
+                    (self.spectrum.wavelength_data > emission_line.group_lam[0] - self.spectrum.line_width) &
+                    (self.spectrum.wavelength_data < emission_line.group_lam[-1] + self.spectrum.line_width)
+                )
+
+                # Calculate and plot continuum
+                wavelength_data = self.spectrum.wavelength_data[group_mask]
+                flux_data = self.spectrum.flux_data[group_mask]
+                
+                if self.spectrum.cont_fit == 'Complete':
+                    continuum = [self.spectrum.spectrum_continuum] * len(wavelength_data)
+                else:
+                    if emission_line.model_params:
+                        model_profile = self.model_fitter.create_model_profile(emission_line.model_params)
+                        continuum = [min(model_profile(wavelength_data))] * len(wavelength_data)
+                    else:
+                        continuum = self.emission_lines._create_trendline(wavelength_data, flux_data)
+                    
+                # Plot continuum
+                continuum, = ax.plot(wavelength_data, continuum, color="#416788", lw=2, alpha=0.8)
+
+                # Make sure not a doppler candidate
+                if not emission_line.doppler_candidate:
+                    # If there are model parameters, create and plot the model
+                    if emission_line.model_params:
+                        # Create the model using the saved parameters
+                        model = self.model_fitter.create_model_profile(emission_line.model_params)
+                        
+                        # Plot the fitted model
+                        fitted_model, = ax.plot(
+                            self.spectrum.wavelength_data[group_mask],
+                            model(self.spectrum.wavelength_data[group_mask]),
+                            color="#242325",
+                            alpha=0.8,
+                            label=f"{ion} Model Fit"
+                        )
+                        
+                    # Plot the lines for each wavelength in the group
+                    for wavelength in emission_line.group_lam:
+                        # Create a wider invisible line for easier clicking
+                        click_line = ax.axvline(
+                            x=wavelength,
+                            color='none',
+                            linewidth=10,
+                            picker=True
+                        )
+                        
+                        # Create the visible line
+                        visible_line = ax.axvline(
+                            x=wavelength,
+                            color='#DC965A',
+                            linestyle='--',
+                            linewidth=2,
+                            alpha=0.8
+                        )
+                        
+                        # Store the line references and metadata
+                        self.selected_lines[wavelength] = {
+                            'click_line': click_line,
+                            'visible_line': visible_line,
+                            'selected': False,
+                            'ion': ion,
+                            'emission_line': emission_line
+                        }
+
+        proxy_visible_line = Line2D([0], [0], color='#8B1E3F', linestyle='--', linewidth=2, alpha=0.8)
+        ax.legend([fitted_model, visible_line, proxy_visible_line, continuum], ['Model Fit', 
+                                                                                'Rest Wavelength (Noise Candidate)',
+                                                                                'Rest Wavelength (Emission Line Candidate)',
+                                                                                'Continuum'])
+
+    def _interactive_plot(self, title, xlabel, ylabel, instructions):
         """
 
         """
         # Setup the plot
-        self.fig, self.ax = self._setup_figure(title, xlabel, ylabel, show_instructions)
+        self.fig, self.ax = self._setup_figure(title, xlabel, ylabel, instructions)
         
         # Plot base spectrum
         self._plot_spectrum(self.ax)
@@ -156,12 +308,67 @@ class Plotter:
         for wavelength in clicked_group:
             if wavelength in self.selected_lines:
                 self.selected_lines[wavelength]['selected'] = new_state
-                new_color = 'red' if new_state else 'pink'
+                new_color = '#8B1E3F' if new_state else '#DC965A'
                 self.selected_lines[wavelength]['visible_line'].set_color(new_color)
         
         # Force redraw
         self.fig.canvas.draw_idle()
 
+    def _plot_emission_line_components(self, ax, emission_line):
+        """
+            
+        """
+        legend_items = []
+        
+        # Create mask for the line group
+        group = emission_line.group_lam
+        flux_mask = (self.spectrum.wavelength_data > group[0] - self.spectrum.line_width) & (
+            self.spectrum.wavelength_data < group[-1] + self.spectrum.line_width)
+        
+        # Plot continuum
+        continuum = [emission_line.continuum] * len(self.spectrum.wavelength_data[flux_mask])
+        trendline = ax.plot(
+            self.spectrum.wavelength_data[flux_mask], 
+            continuum, 
+            color="#C05746", 
+            lw=2
+        )[0]
+        legend_items.append({'element': trendline, 'label': 'Continuum'})
+
+        # Plot model fit if available
+        if emission_line.model_params:
+            model_profile = self.model_fitter.create_model_profile(emission_line.model_params)
+            model_fit = ax.plot(
+                self.spectrum.wavelength_data[flux_mask],
+                model_profile(self.spectrum.wavelength_data[flux_mask]),
+                color="#49506F"
+            )[0]
+            legend_items.append({'element': model_fit, 'label': 'Model Profile'})
+
+        # Plot rest wavelengths
+        for wavelength in emission_line.group_lam:
+            if emission_line.noise_bool:
+                line = ax.axvline(
+                    x=wavelength,
+                    color='#92B257',
+                    linewidth=1.5,
+                    linestyle='--'
+                )
+                legend_items.append({'element': line, 'label': 'Noise Wavelength'})
+            else:
+                line = ax.axvline(
+                    x=wavelength,
+                    color='#5D7A3E',
+                    linewidth=1.5,
+                    linestyle='--'
+                )
+                legend_items.append({'element': line, 'label': 'Rest Wavelength'})
+
+        return legend_items
+
+    # ------------------------------
+    # Public Methods
+    # ------------------------------
     def doppler_plots(self, fitted_models):
         """
 
@@ -171,258 +378,87 @@ class Plotter:
         
         # Setup interactive plot with specific labels
         fig, ax = self._interactive_plot(
-            'Emission Line Selection for Doppler Calculation',
+            f'{self.spectrum.star_name} Emission Line Selection for Doppler Calculation',
             'Wavelength (Å)',
-            'Flux (erg s$^{-1}$ cm$^{-2}$ Å$^{-1}$)'
+            'Flux (erg s$^{-1}$ cm$^{-2}$ Å$^{-1}$)',
+            'Doppler'
         )
         
         # Add models and interactive lines
-        self._plot_models_and_lines(ax, fitted_models)
+        self._plot_doppler_data(ax)
         
         plt.show()
 
+    def noise_plots(self):
+        """
+
+        """
+        # Initialize selected lines to be empty
+        self.selected_lines = {}
+        
+        # Setup interactive plot with specific labels
+        fig, ax = self._interactive_plot(
+            f'{self.spectrum.star_name} Emission Line Selection for Noise Detection',
+            'Wavelength (Å)',
+            'Flux (erg s$^{-1}$ cm$^{-2}$ Å$^{-1}$)',
+            'Noise'
+        )
+        
+        # Add models and interactive lines
+        self._plot_noise_data(ax)
+        
+        plt.show()
+
+
     def get_selected_lines(self):
         """
-            
+
         """
         return {wavelength: self.selected_lines[wavelength]['ion'] 
                 for wavelength in self.selected_lines 
                 if self.selected_lines[wavelength]['selected']}
     
-    
-    # def _plot_base(self, title, xlabel, ylabel, figtext):
-    #     """
-
-    #     """
-    #     sns.set_style("whitegrid")
-    #     fig = plt.figure(figsize=(14, 7))
-    #     ax = fig.add_subplot()
-
-    #     plt.title(title, fontsize = 14)
-    #     plt.xlabel(xlabel, fontsize = 12)
-    #     plt.ylabel(ylabel, fontsize = 12)
+    def create_final_plot(self):
+        """
         
-    #     if figtext:
-    #         fig.text(0.02, 0.98, 
-    #                  "Click on lines to select/deselect for doppler calculation\n" +
-    #                  "Pink = Not Selected, Red = Selected\n" +
-    #                  "Use matplotlib toolbar to zoom/pan",
-    #                  fontsize=10, verticalalignment='top')
+        """
+        # Setup the plot basics
+        fig, ax = self._setup_figure(
+            title=f"Flux vs Wavelength for {self.spectrum.star_name}",
+            xlabel='Wavelength (Å)',
+            ylabel='Flux (erg s$^{-1}$ cm$^{-2}$ Å$^{-1}$)',
+            instructions=None  # No instructions needed for final plot
+        )
 
-    #     return fig, ax
+        # Calculate plot bounds
+        wavelength_mask = (self.spectrum.wavelength_data > 1250) & (
+            self.spectrum.wavelength_data < self.spectrum.max_wavelength)
+        max_peak = max(self.spectrum.flux_data[wavelength_mask])
+        min_peak = min(self.spectrum.flux_data)
 
-    # def _add_legend(self, ax, handles, labels):
-    #     """
-            
-    #     """
-    #     legend = ax.legend(handles, labels)
-    #     legend.get_frame().set_facecolor('white')
-    #     return legend
-    
-    # def _interactive_plot(self, title, xlabel, ylabel):
-    #     """
-
-    #     """
-    #     fig, ax = self._plot_base(self, title, xlabel, ylabel)
-
-    #     # Plot the full spectrum
-    #     plt.plot(self.spectrum.wavelength_data, self.spectrum.flux_data,
-    #              linewidth = 1, color = 'gray', alpha = 0.7)
+        # Plot base spectrum
+        self._plot_spectrum(ax)
         
-    #     # Add Done button
-    #     ax_done = plt.axes([0.85, 0.02, 0.1, 0.04])
-    #     btn_done = Button(ax_done, 'Done')
-    #     btn_done.on_clicked(lambda event: plt.close(fig))
+        # # Set axis limits
+        # ax.set_ylim(min_peak, max_peak * 1.5)
+        # ax.set_xlim(self.spectrum.min_wavelength, self.spectrum.max_wavelength)
 
-    #     # Connect picker event
-    #     fig.canvas.mpl_connect('pick_event', self._on_pick)
-
-    #     # Enable zoom toolbar
-    #     plt.grid(True, alpha=0.3)
-
-    # def _on_pick(self, event):
-    #     """
-
-    #     """
-    #     curr_line = event.artist
-
-    #     # Find which wavelength was clicked and get its group
-    #     clicked_wavelength = None
-    #     clicked_group = None
-
-    #     # Find the clicked wavelengths
-    #     for wavelength in self.selcted_lines:
-    #         if self.selected_lines[wavelength]['click_line'] == curr_line:
-    #             clicked_wavelength = wavelength
-    #             break
-
-    #     if clicked_wavelength is None:
-    #         return
+        # Initialize legend elements
+        legend_elements = []
+        legend_labels = []
         
-    #     # Find which group this wavelegth belongs to
-    #     for ion in self.line_list:
-    #         for emission_line in self.line_list[ion].values():
-    #             if clicked_wavelength in emission_line.group_lam:
-    #                 clicked_group = emission_line.group_lam
-    #                 break
-        
-    #     if clicked_group is None:
-    #         return
-        
-    #     # Toggle selection state based on clicked line
-    #     new_state = not self.selected_lines[clicked_wavelength]['selected']
-
-    #     # Update all lines in the group
-    #     for wavelength in clicked_group:
-    #         self.selected_lines[wavelength]['selected'] = new_state
-
-    #         # Update color of visible line
-    #         new_color = 'red' if new_state else 'pink' # UPDATE ME
-    #         self.selected_lines[wavelength]['visible_line'].set_color(new_color)
-
-    #     # Force redraw
-    #     curr_line.figure.canvas.draw_idle()
-
-    # def _get_selected_lines(self):
-    #     """
-
-    #     """
-    #     return {
-    #         wavelength: self.selected_lines[wavelength] 
-    #         for wavelength in self.selected_lines
-    #         if self.selected_lines[wavelength]['selected']
-    #     }
- 
-    # # ------------------------------
-    # # Public Methods
-    # # ------------------------------
-    # def doppler_plots(self, fitted_models):
-    #     """
-
-    #     """
-    #     # Initialize selected lines to be empty
-    #     self.selected_lines = {} 
-
-    #     # Setup plot bones -> maybe fix me
-    #     self._interactive_plot(
-    #         'Emission Line Selection for Doppler Calculation',
-    #         'Wavelength (Å)',
-    #         'Flux (erg s$^{-1}$ cm$^{-2}$ Å$^{-1}$)') 
-        
-    #     # Iterate through fitted models
-    #     for group, data in fitted_models.items():
-    #         fitted_model = data['model']
-    #         mask = data['mask']
-    #         ion = data['ion']
-
-    #         # Plot the fitted model
-    #         plt.plot(self.spectrum.wavelength_data[mask], 
-    #                 fitted_model(self.spectrum.wavelength_data[mask]), 
-    #                 color="#111D4A", alpha=0.8)
-            
-    #         # Plot the selectable lines for each wavelength
-    #         for wavelength in group:
-    #             # Create a wider invisible line for easier clicking
-    #             click_line = plt.axvline(x=wavelength, color='none', linewidth=10, picker=True)
-
-    #             # Create the visible line
-    #             visible_line = plt.axvline(x=wavelength, color='pink', linestyle='--', 
-    #                                      linewidth=2, alpha=0.8)
+        # Plot emission lines and their components
+        for ion in self.emission_lines.line_list:
+            for emission_line in self.emission_lines.line_list[ion].values():
+                legend_items = self._plot_emission_line_components(ax, emission_line)
                 
-    #             self.selected_lines[wavelength] = {
-    #                 'click_line': click_line,
-    #                 'visible_line': visible_line,
-    #                 'selected': False,
-    #                 'ion': ion
-    #             }
+                # Add new legend items if they don't exist yet
+                for item in legend_items:
+                    if item['label'] not in legend_labels:
+                        legend_elements.append(item['element'])
+                        legend_labels.append(item['label'])
 
-    #     plt.show()
-        
-        
-        
-
-
-
-        
-        # # Plot fitted models and lines for each group
-        # for group_data in fitted_models.items():
-
-        #     ax.plot(self.spectrum.wavelength_data[data['mask']], 
-        #            data['model'](self.spectrum.wavelength_data[data['mask']]), 
-        #            color="#111D4A", alpha=0.8)
-
-        
-
-
-    # def noise_plot(self, line, wavelength_data, flux_data, group_airglow, model_profile=None, continuum=None):
-    #     """
-
-    #     """
-    #     # Create base plot
-    #     fig, ax = self._plot_base(
-    #         title=f"Flux vs Wavelength for {line.ion}",
-    #         xlabel='Wavelength (Å)',
-    #         ylabel='Flux (erg s$^{-1}$ cm$^{-2}$ Å$^{-1}$)'
-    #     )
-    #     fig.suptitle("Click 'y' if is noise, 'n' if not", fontweight='bold', fontsize=15)
-        
-    #     # Plot data
-    #     ax.plot(wavelength_data, flux_data, linewidth=1, color='#4B3C30')
-    #     legend_handles = []
-    #     legend_labels = []
-
-    #     # Add rest/observed wavelengths
-    #     rest_lam = ax.axvline(x=line.group_lam[-1], color="#71816D", linewidth=1, linestyle=((0, (5, 5))))
-    #     obs_lam = ax.axvline(x=line.obs_lam, color="#D7816A", linewidth=1)
-    #     legend_handles.extend([rest_lam, obs_lam])
-    #     legend_labels.extend(["Rest Wavelength", "Observed Wavelength"])
-
-    #     # Add model fit
-    #     if model_profile is not None:
-    #         model_fit, = ax.plot(wavelength_data, model_profile(wavelength_data), color="#231651")
-    #         legend_handles.append(model_fit)
-    #         legend_labels.append(f"Model Fit")
-
-    #     # Add continuum
-    #     if continuum is not None:
-    #         continuum_fit, = ax.plot(wavelength_data, continuum, color="#DA667B")
-    #         legend_handles.append(continuum_fit)
-    #         legend_labels.append("Continuum")
-
-    #     # Add airglow
-    #     if not group_airglow.empty:
-    #         for airglow in group_airglow['Central Wavelength']:
-    #             airglow_lam = ax.axvline(x=airglow, color='#4464AD', linewidth=1)
-    #         legend_handles.append(airglow_lam)
-    #         legend_labels.append("Airglow")
-
-    #     self._add_legend(ax, legend_handles, legend_labels)
-    #     return fig
-
-    # def doppler_selection_plot(self, ion, group_mask, fitted_model, group):
-    #     """
-
-    #     """
-    #     # Create base plot
-    #     fig, ax = self._plot_base(
-    #         title=f"Flux vs Wavelength for {ion}",
-    #         xlabel='Wavelength (Å)',
-    #         ylabel='Flux (erg s$^{-1}$ cm$^{-2}$ Å$^{-1}$)'
-    #     )
-    #     fig.suptitle("Click 'y' to select line for Doppler calculation", fontweight='bold', fontsize=15)
-
-    #     # Plot data and model
-    #     ax.plot(self.spectrum.wavelength_data[group_mask], self.spectrum.flux_data[group_mask], linewidth=1)
-    #     ax.plot(self.spectrum.wavelength_data[group_mask], fitted_model(self.spectrum.wavelength_data[group_mask]), color="#111D4A")
-
-    #     # Add interactive lines
-    #     legend_handles = []
-    #     legend_labels = []
-    #     for wavelength in group:
-    #         rest_lam = ax.axvline(x=wavelength, color="#F96E46", linestyle=((0, (5, 5))), linewidth=1)
-    #         obs_lam = ax.axvline(x=wavelength, color="#8F1423", linewidth=1)
-    #     legend_handles.extend([rest_lam, obs_lam])
-    #     legend_labels.extend(["Rest Wavelength", "Observed Wavelength"])
-
-    #     self._add_legend(ax, legend_handles, legend_labels)
-    #     return fig
+        # Add legend and save
+        ax.legend(legend_elements, legend_labels)
+        plt.savefig(self.spectrum.final_plot_dir)
+        plt.show()

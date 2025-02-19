@@ -1,9 +1,14 @@
+from astropy.modeling.models import Voigt1D, Gaussian1D
+from astropy.modeling import fitting, CompoundModel
+from astropy.modeling.fitting import NonFiniteValueError
 import numpy as np
+
+from .model_fitter import ModelFitter, ModelFitterError
 
 # ------------------------------
 # Constants
 # ------------------------------
-TOLERANCE = 10  # Tolerance for grouping emission lines (in Angstroms)
+TOLERANCE = 6  # Tolerance for grouping emission lines (in Angstroms)
 
 # ------------------------------
 # EmissionLines Class
@@ -14,13 +19,18 @@ class EmissionLines(object):
         
         """
         self.spectrum = spectrum
+        self.model_fitter = ModelFitter(spectrum)
+
         self.grouped_lines = self._group_emission_lines()
 
-        # Initialize emission line list
-        self.line_list = []
+        # Initalize line list
+        self.line_list = self._initialize_line_list()
 
         # Find the continuum
-        self.spectrum_continuum = self._find_spectrum_continuum()
+        self.spectrum.spectrum_continuum = self._find_spectrum_continuum()
+
+        # Get emission line models
+        self.line_models = self._get_line_models()
 
     # ------------------------------
     # Private Helper Functions
@@ -29,27 +39,25 @@ class EmissionLines(object):
         """
 
         """
+        # Check what kind !
         cont_arr = []
 
-        # Iterate through all of the rest wavelengths
-        for ion in self.grouped_lines:
-            for group in self.grouped_lines[ion]:
-                # Mask out the grouped emission lines
+        # Use line_list instead of grouped_lines
+        for ion in self.line_list:
+            for emission_line in self.line_list[ion].values():
                 group_mask = (
-                    (self.spectrum.wavelength_data > group[0] - self.spectrum.line_width) &
-                    (self.spectrum.wavelength_data < group[-1] + self.spectrum.line_width)
+                    (self.spectrum.wavelength_data > emission_line.group_lam[0] - self.spectrum.line_width) &
+                    (self.spectrum.wavelength_data < emission_line.group_lam[-1] + self.spectrum.line_width)
                 )
-
-                # Find the continuum for each emission line
+                
                 group_continuum = self._create_trendline(
                     self.spectrum.wavelength_data[group_mask],
                     self.spectrum.flux_data[group_mask]
                 )
-                cont_arr += list(group_continuum)
+                cont_arr.extend(group_continuum)
 
-        # Calculate the 25th percentile as the continuum
         return np.percentile(cont_arr, 25)
-
+    
     def _group_emission_lines(self):
         """
 
@@ -108,9 +116,110 @@ class EmissionLines(object):
         continuum_array = [avg_flux for _ in range(length + 1)]
         return continuum_array
     
+    def _initialize_line_list(self):
+        """
+
+        """
+        line_list = {}
+
+        # Iteratre through each ion
+        for ion in self.grouped_lines:
+            # Initialize an instance in linelist for the ion
+            line_list[ion] = {}
+            
+            # Iterate through each group
+            for group in self.grouped_lines[ion]:
+                # Mask out of emission line group 
+                group_mask = (self.spectrum.wavelength_data > group[0] - self.spectrum.line_width) & (
+                    self.spectrum.wavelength_data < group[len(group) - 1] + self.spectrum.line_width) 
+                
+                # Check if data is valid
+                if not any(self.spectrum.flux_data[group_mask]):
+                    continue
+
+                # Add emission line to line list
+                emission_line = self.EmissionLine(
+                    ion = ion, 
+                    group_lam = group, 
+                    obs_lam = None,
+                    blended_bool = len(group) > 1,
+                    doppler_candidate = False, 
+                    noise_bool = True, # change name to is_noise
+                    model_params = None,
+                    continuum = None, 
+                    flux_error = None
+                )
+                
+                # Add to linelist
+                line_list[ion][group[0]] = emission_line
+
+        return line_list 
+    
+    def _get_line_models(self):
+        """
+
+        """
+        line_models = {}
+
+        for ion in self.line_list:
+            for emission_line in self.line_list[ion].values():
+                # Mask out the emission line group
+                group_mask = (
+                    (self.spectrum.wavelength_data > emission_line.group_lam[0] - self.spectrum.line_width) &
+                    (self.spectrum.wavelength_data < emission_line.group_lam[-1] + self.spectrum.line_width)
+                )
+
+                if not any(self.spectrum.flux_data[group_mask]):
+                    continue
+
+                try:
+                    # Use ModelFitting class instead of direct creation
+                    compound_model = self.model_fitter.create_model(emission_line.group_lam)
+                    
+                    # Use ModelFitting class for fitting
+                    fitted_model, fitter = self.model_fitter.fit_model(
+                        compound_model,
+                        self.spectrum.wavelength_data[group_mask],
+                        self.spectrum.flux_data[group_mask]
+                    )
+
+                    # Use ModelFitting class to save parameters
+                    model_params = self.model_fitter.save_model_params(fitted_model, fitter)
+                    emission_line.model_params = model_params
+
+                    # Store the fitted model and mask
+                    line_models[tuple(emission_line.group_lam)] = {
+                        'model': fitted_model,
+                        'mask': group_mask,
+                        'ion': ion
+                    }
+
+                except ModelFitterError:
+                    continue
+
+        return line_models
+    
     # ------------------------------
     # Public Methods
     # ------------------------------
+    def update_selected_lines(self, plotter, purpose):
+        """
+        
+        """
+        selected = {wavelength: data for wavelength, data in 
+                   plotter.selected_lines.items() if data['selected']}
+        
+        for wavelength, line_data in selected.items():
+            try:
+                line = self.line_list[line_data['ion']][wavelength]
+                if purpose == 'Doppler':
+                    line.doppler_candidate = True
+                    line.noise_bool = False
+                elif purpose == 'Noise':
+                    line.noise_bool = False
+            except KeyError:
+                continue
+
     def emission_line_to_dict(self, line_obj):
         """
 
@@ -121,7 +230,7 @@ class EmissionLines(object):
             "obs_lam": float(line_obj.obs_lam),
             "noise_bool": line_obj.noise_bool,
             "blended_bool": line_obj.blended_bool,
-            "doppler_candidate": None,
+            "doppler_candidate": line_obj.doppler_candidate,
             "model_params": line_obj.model_params,
             "continuum": float(line_obj.continuum),
             "flux_error": line_obj.flux_error,
@@ -155,140 +264,3 @@ class EmissionLines(object):
             self.model_params = model_params
             self.continuum = continuum
             self.flux_error = flux_error
-
-    
-    # def find_spectrum_continuum(self):
-    #     """
-            
-    #     """
-    #     cont_arr = []
-
-    #     # Iterate through all of the rest wavelengths
-    #     for ion in self.grouped_lines:
-    #         for group in self.grouped_lines[ion]:
-    #             # Mask out the grouped emission lines
-    #             group_mask = (self.spectrum.wavelength_data > group[0] - self.spectrum.line_width) & (
-    #                 self.spectrum.wavelength_data < group[len(group) - 1] + self.spectrum.line_width) 
-                
-    #             # Find the continuum for each emission line
-    #             group_continuum = self.split_create_trendline(self.spectrum.wavelength_data[group_mask],
-    #                                                           self.spectrum.flux_data[group_mask])
-                
-    #             cont_arr += list(group_continuum)
-
-    #     # Calculate the mean to be the continuum
-    #     return np.percentile(cont_arr, 25)
-
-
-
-    # def grouping_emission_lines(self):
-    #     """
-    #         Groups blended emission lines together based off of ion, and a pre-determined tolerance
-    #         (Note: this function assumes the DEM data is strictly increasing)
-    #         Parameters: 
-    #                     None
-    #         Returns:
-    #                     ion_groups: dictionary with ion name as the key, and  blended groups for that as the value
-    #     """
-    #     # Initialize variables
-    #     tolerance = 1.5 # ADJUST ME (was 10 previously)
-    #     ion_groups = {}
-    #     close_group_found = False
-
-    #     # Loop through emission lines
-    #     for _, row in self.spectrum.rest_lam_data.iterrows():
-    #         ion = row["Ion"]
-    #         wavelength = float(row["Wavelength"])
-
-    #         # Check if wavelength is within wavelength bounds
-    #         if wavelength < self.spectrum.min_wavelength: 
-    #             continue
-
-    #         # Check if ion does not exist in the dictionary
-    #         if ion not in ion_groups:
-    #             ion_groups[ion] = [[wavelength]]
-                
-    #         # Ion is already in the dictionary
-    #         else:
-    #             close_group_found = False
-    #             # Iterate through each group for that ion
-    #             for group in ion_groups[ion]:
-    #                 # If the largest value in the group - wavelength is less than the tolerance, add to that group
-    #                 if abs(max(group) - wavelength) <= tolerance:
-    #                     group.append(wavelength)
-    #                     close_group_found = True
-    #                     break
-                
-    #             # If no close group was found, add to that ion as a seperate group
-    #             if not close_group_found:
-    #                 ion_groups[ion].append([wavelength])
-
-    #     return ion_groups
-    
-
-    # def split_create_trendline(self, wavelength_data, flux_data):
-    #     """
-    #         Create a continuum trendline using the average flux from the left and right of the peak
-    #         Parameters: 
-    #                     wavelength_data: masked wavelength data from the spectra     
-    #                     flux_data: masked flux data from the spectra
-    #         Returns:
-    #                     continuum_array: continuum data for the current peak
-    #     """
-    #     # Initialize variables
-    #     length = len(wavelength_data) - 1
-    #     flux_list_left = []
-    #     flux_list_right = []
-        
-    #     # Make an array of all flux that aren't included in the peak
-    #     for i in range(0, int(self.spectrum.line_width_pixels/2)):
-    #         flux_list_left.append(flux_data[i])
-    #         flux_list_right.append(flux_data[length-i])
-            
-    #     # Find the average flux for the left and right
-    #     avg_flux_left = sum(flux_list_left)/len(flux_list_left)
-    #     avg_flux_right = sum(flux_list_right)/len(flux_list_right)
-        
-    #     # Use the lesser of the two values as the average flux
-    #     if avg_flux_left < avg_flux_right:
-    #         avg_flux = avg_flux_left
-    #     else:
-    #         avg_flux = avg_flux_right
-        
-    #     continuum_array = [avg_flux for _ in range(length + 1)]
-        
-    #     return continuum_array
-    
-
-    # def emission_line_to_dict(self, line_obj):
-    #     """
-    #         Saves an emission line object as a dictionary 
-    #         Parameters: 
-    #                     line_obj: emission line object
-    #         Returns:
-    #                     a dictionary of the emission line
-    #     """
-    #     return {
-    #         "ion": line_obj.ion,
-    #         "group_lam": line_obj.group_lam, 
-    #         "obs_lam": float(line_obj.obs_lam),
-    #         "noise_bool": line_obj.noise_bool,
-    #         "blended_bool": line_obj.blended_bool,
-    #         "doppler_candidate": None,
-    #         "model_params": line_obj.model_params, # CHECK ME !!!!
-    #         "continuum": float(line_obj.continuum),
-    #         "flux_error": line_obj.flux_error
-    #     }
-
-
-    # class Emission_Line:
-    #     def __init__(self, ion, group_lam, obs_lam, noise_bool, blended_bool, doppler_candidate, model_params, continuum, flux_error):
-    #         self.ion = ion
-    #         self.group_lam = group_lam
-    #         self.obs_lam = obs_lam
-    #         self.noise_bool = noise_bool
-    #         self.blended_bool = blended_bool
-    #         self.doppler_candidate = doppler_candidate
-    #         self.model_params = model_params
-    #         self.continuum = continuum
-    #         self.flux_error = flux_error 

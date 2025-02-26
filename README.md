@@ -74,7 +74,7 @@ The script accomplishes the task of calculating flux by:
       if __name__ == '__main__':
           main()
    ```
-
+   
 3. **Create a `config.py`, which contains two main configuration dictionaries that control the behavior of spec2flux.**
    ``` python
    """
@@ -120,7 +120,7 @@ The script accomplishes the task of calculating flux by:
           'fresh_start': True
       }
    ```
-
+   
 4. **Ensure your files for the DEM lines, airglow, and the spectrum, which will used to calculate the flux, are in your directory.**
    ```bash
       project-directory/
@@ -130,7 +130,7 @@ The script accomplishes the task of calculating flux by:
       ├── airglow.csv
       ├── spectrum.fits
       ```
-
+   
 5. **Make your `main.py` resemble the following:**
    ```python
       import spec2flux
@@ -174,61 +174,113 @@ The script accomplishes the task of calculating flux by:
       if __name__ == '__main__':
           main()
    ```
-
-   
+    
 6. **Run `main.py`.**
    ```sh
       python main.py
    ```
-
-7. **Select "best" doppler shift candidates.** </br>
-A plot of the complete spectrum will appear, with orange lines representing possible candidates for doppler shift.
- 
-
    
 7. **Select "best" doppler shift candidates.** </br>
-   A series of plots will appear, click 'y' if the plot is an eligible candidate for doppler shift, 'n' if it is not.
+   a. A plot of the complete spectrum will appear, with orange lines representing possible candidates for doppler shift.
+      <div align="center">
+          <img src="https://github.com/bellalongo/spec2flux/blob/main/readme_pics/doppler_spectrum.png?raw=true" alt="Doppler calculation plots before selections" width="600">
+          <p>Figure 1: Doppler candidate selection plots when 'main.py' is first run. </p>
+      </div>
    
-   <div align="center">
-       <img src="https://github.com/bellalongo/spec2flux/blob/main/readme_pics/doppler_calc.png?raw=true" alt="Doppler calculation example" width="600">
-       <p>Figure 1: This is a good example because the Doppler shift is consistent between both emission lines, with minimal noise.</p>
-   </div>
+   b. Click on the **zoom icon** at the bottom left of the plot, and zoom into a possible candidate (orange line).
+      <table>
+        <tr>
+          <td align="center">
+            <img src="https://github.com/bellalongo/spec2flux/blob/main/readme_pics/zoom_button.png?raw=true" alt="Matplotlib zoom button" width="200">
+            <p>Figure 2: Matplotlib zoom button. </p>
+          </td>
+          <td align="center">
+            <img src="https://github.com/bellalongo/spec2flux/blob/main/readme_pics/doppler_zoom.png?raw=true" alt="Zoomed in doppler candidate" width="600">
+            <p>Figure 3: Zoomed in potential doppler candidate (this is an example of a good doppler candidate). </p>
+          </td>
+        </tr>
+      </table> 
+    
+   c. If looks like a suitable candidate, click on the **orange** lines, and they will turn **magenta** (ZOOM BUTTON MUST BE UNPRESSED TO SELECT)
+      You can click on the line again to deselect.
+      <div align="center">
+          <img src="https://github.com/bellalongo/spec2flux/blob/main/readme_pics/doppler_selected.png?raw=true" alt="Doppler candidate selection" width="600">
+          <p>Figure 4: Selected Doppler candidate. </p>
+      </div>
 
+   d. Click on the home button and zoom/select other suitable candidates.
+      <table>
+        <tr>
+          <td align="center">
+            <img src="https://github.com/bellalongo/spec2flux/blob/main/readme_pics/home_button.png?raw=true" alt="Matplotlib home button" width="200">
+            <p>Figure 5: Matplotlib home button. </p>
+          </td>
+          <td align="center">
+            <img src="https://github.com/bellalongo/spec2flux/blob/main/readme_pics/doppler_candidates_selected.png?raw=true" alt="Completed doppler candidate selection" width="600">
+            <p>Figure 6: Example of what a completed doppler candidate selection spectrum could look like. </p>
+          </td>
+        </tr>
+      </table> 
 
-8. **After iterating through all the doppler shift candidates, plots will appear for the noise selection portion.** </br>
-   To select if the current plot is noise or not, click 'y' if the plot is noise and 'n' if the plot is not noise.
+   e. Click the **done button** at the button right when satisfied with Doppler candidate selections.
+         <div align="center">
+          <img src="https://github.com/bellalongo/spec2flux/blob/main/readme_pics/doppler_candidates_selected copy.png?raw=true" alt="Done button" width="600">
+          <p>Figure 7: Done button at the button right corner. </p>
+      </div>
 
-   <table>
-     <tr>
-       <td align="center">
-         <img src="https://github.com/bellalongo/spec2flux/blob/main/readme_pics/not_noise.png?raw=true" alt="Not noise example" width="400">
-         <p>Figure 2: This plot is not noisy because the emission lines are well-defined at the specified rest wavelengths.</p>
-       </td>
-       <td align="center">
-         <img src="https://github.com/bellalongo/spec2flux/blob/main/readme_pics/noise.png?raw=true" alt="Noise example" width="400">
-         <p>Figure 3: This plot is noisy because the emission lines at the specified rest wavelength are not well-defined.</p>
-       </td>
-     </tr>
-   </table>
+9. **After done bottom is clicked, a spectrum will appear with emission line candidates marked in **orange**.** </br>
+   a. To select if the current plot is noise or not, click 'y' if the plot is noise and 'n' if the plot is not noise.
+      <div align="center">
+          <img src="https://github.com/bellalongo/spec2flux/blob/main/readme_pics/noise_spectrum.png?raw=true" alt="Noise selection plot" width="600">
+          <p>Figure 8: Noise selection plot after clicking 'Done' on the Doppler selection plot. </p>
+      </div>
 
-9. **After all emission lines are iterated through, a final plot will appear**
+   b. Use the zoom button to zoom into an emission line candidate and select it if suitable.
+      <table>
+        <tr>
+          <td align="center">
+            <img src="https://github.com/bellalongo/spec2flux/blob/main/readme_pics/emission_line_candidate.png?raw=true" alt="Matplotlib home button" width="400">
+            <p>Figure 9: Potential emission line candidate (not selected). </p>
+          </td>
+          <td align="center">
+            <img src="https://github.com/bellalongo/spec2flux/blob/main/readme_pics/noise_selected.png?raw=true" alt="Emission line candidate" width="400">
+            <p>Figure 10: Potential emission line candidate (selected). </p>
+          </td>
+        </tr>
+      </table> 
+
+   c. Use the zoom and home buttons to select other emission line candidates, leaving noise as orange.
+         <div align="center">
+          <img src="https://github.com/bellalongo/spec2flux/blob/main/readme_pics/noise_candidate.png?raw=true" alt="Noise candidate" width="600">
+          <p>Figure 11: Example of noise. </p>
+      </div>
+
+   d. When completed, click on the done button at the bottom right.
+      <table>
+        <tr>
+          <td align="center">
+            <img src="https://github.com/bellalongo/spec2flux/blob/main/readme_pics/noise_spectrum.png?raw=true" alt="Final spectrum with emission line candidates selected" width="400">
+            <p>Figure 12: Final spectrum with all emission line candidates selected. </p>
+          </td>
+          <td align="center">
+            <img src="https://github.com/bellalongo/spec2flux/blob/main/readme_pics/noise_candidates_selected copy.png?raw=true" alt="Done button for noise spectrum" width="400">
+            <p>Figure 13: Done button at the bottom right of the plot. </p>
+          </td>
+        </tr>
+      </table> 
+
+10. **After all emission lines are iterated through, a final plot will appear**
 
    <div align="center">
        <img src="https://github.com/bellalongo/spec2flux/blob/main/readme_pics/final_plot.png?raw=true" alt="Final plot example" width="600">
-       <p>Figure 4: Plot of the entire spectrum with the continuum, profile fits, and wavelengths marked.</p>
+       <p>Figure 14: Plot of the entire spectrum with the continuum, profile fits, and wavelengths marked.</p>
    </div>
-   
-   </br>
-   <div align="center">
-       <img src="https://github.com/bellalongo/spec2flux/blob/main/readme_pics/zoom.png?raw=true" alt="Zoomed plot example" width="600">
-       <p>Figure 5: Final plot zoomed in.</p>
-   </div>
-   </br>
 
-10. **After running the script, your directory will now look like the following:**
+11. **After running the script, your directory will now look like the following:**
       ```bash
       project-directory/
       ├── main.py
+      ├── config.py
       ├── DEM_goodlinelist.csv
       ├── airglow.csv
       ├── spectrum.fits

@@ -147,7 +147,7 @@ When the script runs, you'll first be presented with a spectrum plot for selecti
 
 **Steps:**
 1. Use the zoom button to inspect potential candidates (orange lines)
-2. Click on good candidates to select them (they will turn magenta)
+2. Click on good candidates to select them (they will turn magenta) **zoom button must be unclicked to select!**
 3. Use the home button to return to the full spectrum view
 4. Click "Done" when you've selected all suitable Doppler candidates
 

@@ -1,42 +1,44 @@
-import spec2flux
+from config import SPECTRUM_CONFIG, ANALYSIS_CONFIG
 
+import sys
+sys.path.insert(0, '../')
+
+import spec2flux    
 
 def main():
-    # Spectrum details (adjust me with each star)
-    spectrum_dir = 'hlsp_muscles_hst_stis_tau_ceti_e140m_v1_component-spec.fits'
-    rest_dir = 'DEM_goodlinelist.csv'
-    airglow_dir = 'airglow.csv'
-    observation = 'sci' # SCI only
-    telescope = 'hst' # HST only
-    instrument = 'stis' # STIS or COS only
-    grating = 'e140m' # L or M grating only
-    star_name = 'NEWEX'
-    min_wavelength = 1160
-
-    # Spectrum adjustments
-    apply_smoothing = False # True if want to apply gaussian smoothing
-    line_fit_model = 'Voigt' # 'Voigt' or 'Gaussian' fit
-
-    # User adjustable parameters
-    fresh_start = True # True if first time running, or have already ran for a star and want to see final plot
-
     # Check inputs
-    spec2flux.InputCheck(spectrum_dir, rest_dir, airglow_dir, observation, telescope, instrument, grating, star_name, 
-               min_wavelength, apply_smoothing, line_fit_model, fresh_start)
+    spec2flux.InputCheck(SPECTRUM_CONFIG, ANALYSIS_CONFIG)
 
     # Load spectrum data and emission lines
-    spectrum = spec2flux.SpectrumData(spectrum_dir, rest_dir, airglow_dir, observation, telescope, instrument, grating, star_name, 
-                            min_wavelength, apply_smoothing)
+    spectrum = spec2flux.SpectrumData(SPECTRUM_CONFIG, ANALYSIS_CONFIG)
     emission_lines = spec2flux.EmissionLines(spectrum)
 
-    # Calculate flux
-    flux_calc = spec2flux.FluxCalculator(spectrum, emission_lines, fresh_start, line_fit_model)
+    if ANALYSIS_CONFIG['fresh_start']:
+        # Initialize plotter
+        plotter = spec2flux.Plotter(spectrum, emission_lines)
 
-    # Show final plot
-    spectrum.final_spectrum_plot(emission_lines, flux_calc)
+        # Calculate doppler shift
+        plotter.doppler_plots()
+        emission_lines.update_selected_lines(plotter, 'Doppler')
 
+        doppler_calculator = spec2flux.DopplerCalculator(spectrum)
+        spectrum.doppler_shift = doppler_calculator.calculate_doppler_shift(emission_lines)
+
+        # Handle noise detection
+        plotter.noise_plots()
+        emission_lines.update_selected_lines(plotter, 'Noise')
+
+        # Calculate fluxes
+        flux_calculator = spec2flux.FluxCalculator(spectrum, emission_lines)
+        flux_calculator.process_spectrum()
+
+    else:
+        # Load existing data
+        emission_lines.load_saved_data()
+        
+    # Final plot
+    plotter = spec2flux.Plotter(spectrum, emission_lines)
+    plotter.create_final_plot()
 
 if __name__ == '__main__':
     main()
-
-    print('All done!')

@@ -4,12 +4,19 @@ import numpy as np
 
 class DopplerCalculator:
     """
-        
+        This class calculates the Doppler shift from emission lines in a spectrum.
+        It uses the model parameters from fitted emission lines to determine individual line velocities,
+        then computes a weighted mean to obtain the final Doppler shift value.
+        Attributes:
+            spectrum (SpectrumData): The spectrum data object
+            doppler_shift (Quantity): The calculated Doppler shift in km/s
+            doppler_error (Quantity): The error in the calculated Doppler shift in km/s
     """
-    
     def __init__(self, spectrum):
         """
-            
+            Initializes the DopplerCalculator with a spectrum object.
+            Arguments:
+                spectrum (SpectrumData): The spectrum data object containing wavelength and flux data
         """
         self.spectrum = spectrum
         self.doppler_shift = None
@@ -20,7 +27,12 @@ class DopplerCalculator:
     # ------------------------------
     def _compute_weighted_mean(self, values, errors):
         """
-
+            Computes the weighted mean of a set of values with their associated errors.
+            Arguments:
+                values (list): List of values as Astropy Quantity objects
+                errors (list): List of error values as Astropy Quantity objects
+            Returns:
+                tuple: (weighted_mean, weighted_error) as Astropy Quantity objects in km/s
         """
         if len(values) > 1:
             weights = [1/error.value**2 for error in errors]
@@ -34,7 +46,11 @@ class DopplerCalculator:
 
     def _save_results(self):
         """
-
+            Saves the calculated Doppler shift and error to a file.
+            Arguments:
+                None
+            Returns:
+                None
         """
         with open(self.spectrum.doppler_dir, 'a') as f:
             f.write(
@@ -43,7 +59,12 @@ class DopplerCalculator:
 
     def _calculate_single_line_velocity(self, rest_wavelength, model_params):
         """
-
+            Calculates the velocity for a single emission line.
+            Arguments:
+                rest_wavelength (float): Rest wavelength of the emission line in Angstroms
+                model_params (dict): Model parameters from the fitted line profile
+            Returns:
+                tuple: (velocity, velocity_error) as Astropy Quantity objects in km/s
         """
         rest_lam = rest_wavelength * u.AA
         
@@ -73,7 +94,13 @@ class DopplerCalculator:
     # ------------------------------
     def calculate_doppler_shift(self, emission_lines):
         """
-
+            Calculates the Doppler shift based on selected emission lines.
+            Arguments:
+                emission_lines (EmissionLines): Object containing emission line data
+            Returns:
+                Quantity: The calculated Doppler shift as an Astropy Quantity in km/s
+            Raises:
+                DopplerCalculationError: If no lines are selected for Doppler calculation
         """
         velocities = []
         velocity_errors = []
@@ -97,7 +124,11 @@ class DopplerCalculator:
 
     def calculate_line_velocity(self, emission_line):
         """
-
+            Calculates the velocity for a group of emission lines (possibly blended).
+            Arguments:
+                emission_line (EmissionLine): Emission line object
+            Returns:
+                tuple: (velocity, velocity_error) as Astropy Quantity objects in km/s
         """
         line_velocities = []
         line_errors = []
@@ -113,10 +144,9 @@ class DopplerCalculator:
         # Compute weighted mean for the line group
         return self._compute_weighted_mean(line_velocities, line_errors)
     
-    
-
 class DopplerCalculationError(Exception):
     """
-
+        Exception raised when there is an error in Doppler shift calculation.
+        ** This typically occurs when no emission lines are selected for the calculation.
     """
     pass

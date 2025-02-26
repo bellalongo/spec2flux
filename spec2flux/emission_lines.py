@@ -1,6 +1,5 @@
-from astropy.modeling.models import Voigt1D, Gaussian1D
-from astropy.modeling import fitting, CompoundModel
-from astropy.modeling.fitting import NonFiniteValueError
+import astropy.units as u
+import json
 import numpy as np
 
 from .model_fitter import ModelFitter, ModelFitterError
@@ -14,9 +13,22 @@ TOLERANCE = 6  # Tolerance for grouping emission lines (in Angstroms)
 # EmissionLines Class
 # ------------------------------
 class EmissionLines(object):
+    """
+        This class handles the detection, grouping, and analysis of emission lines in a spectrum.
+        It identifies emission lines, groups them based on proximity, and fits models to them.
+        Attributes:
+            spectrum (SpectrumData): The spectrum data object containing wavelength and flux data
+            model_fitter (ModelFitter): Object for fitting models to emission lines
+            grouped_lines (dict): Dictionary of grouped emission lines by ion
+            line_list (dict): Dictionary of EmissionLine objects organized by ion and wavelength
+            spectrum_continuum (float): The calculated continuum level of the spectrum
+            line_models (dict): Dictionary of fitted models for emission lines
+    """
     def __init__(self, spectrum):
         """
-        
+            Initializes the EmissionLines object with spectrum data and performs initial line detection.
+            Arguments:
+                spectrum (SpectrumData): The spectrum data object
         """
         self.spectrum = spectrum
         self.model_fitter = ModelFitter(spectrum)
@@ -37,7 +49,11 @@ class EmissionLines(object):
     # ------------------------------
     def _find_spectrum_continuum(self):
         """
-
+            Determines the continuum level of the spectrum by analyzing regions around emission lines.
+            Arguments:
+                None
+            Returns:
+                float: The calculated continuum level
         """
         # Check what kind !
         cont_arr = []
@@ -60,7 +76,12 @@ class EmissionLines(object):
     
     def _group_emission_lines(self):
         """
-
+            Groups emission lines by ion and proximity in wavelength.
+            Lines within the TOLERANCE distance are grouped together.
+            Arguments:
+                None
+            Returns:
+                dict: Dictionary of grouped emission lines by ion
         """
         ion_groups = {}
 
@@ -94,7 +115,12 @@ class EmissionLines(object):
 
     def _create_trendline(self, wavelength_data, flux_data):
         """
-
+            Creates a trendline (continuum) for a segment of spectrum data.
+            Arguments:
+                wavelength_data (ndarray): Array of wavelength values
+                flux_data (ndarray): Array of flux values
+            Returns:
+                list: Array of continuum values matching the input wavelength array length
         """
         length = len(wavelength_data) - 1
         flux_list_left = []
@@ -114,11 +140,17 @@ class EmissionLines(object):
 
         # Create a continuum array
         continuum_array = [avg_flux for _ in range(length + 1)]
+        
         return continuum_array
     
     def _initialize_line_list(self):
         """
-
+            Initializes the line_list dictionary with EmissionLine objects for each 
+            identified emission line group.
+            Arguments:
+                None
+            Returns:
+                dict: Dictionary of EmissionLine objects organized by ion and wavelength
         """
         line_list = {}
 
@@ -157,7 +189,11 @@ class EmissionLines(object):
     
     def _get_line_models(self):
         """
-
+            Creates and fits models to identified emission lines.
+            Arguments:
+                None
+            Returns:
+                dict: Dictionary of fitted models for emission lines
         """
         line_models = {}
 
@@ -204,7 +240,12 @@ class EmissionLines(object):
     # ------------------------------
     def update_selected_lines(self, plotter, purpose):
         """
-        
+            Updates emission lines based on user selections in the plotter interface.
+            Arguments:
+                plotter (Plotter): Object containing information about selected lines
+                purpose (str): Purpose of the selection ('Doppler' or 'Noise')
+            Returns:
+                None
         """
         selected = {wavelength: data for wavelength, data in 
                    plotter.selected_lines.items() if data['selected']}
@@ -220,9 +261,65 @@ class EmissionLines(object):
             except KeyError:
                 continue
 
+    def load_saved_data(self):
+        """
+            Loads previously saved emission line data from a JSON file.
+            Arguments:
+                None
+            Returns:
+                None
+            Raises:
+                FileNotFoundError: If the saved data file doesn't exist
+                ValueError: If the JSON format is invalid
+        """
+        try:
+            with open(self.spectrum.emission_lines_dir, "r") as json_file:
+                emission_line_data = json.load(json_file)
+
+            # Clear existing line list
+            self.line_list = {}
+            
+            # Reconstruct emission line objects
+            for data in emission_line_data:
+                # Create EmissionLine object
+                emission_line = self.EmissionLine(
+                    ion=data["ion"],
+                    group_lam=data["group_lam"],
+                    obs_lam=data["obs_lam"],
+                    noise_bool=data["noise_bool"],
+                    blended_bool=data["blended_bool"],
+                    doppler_candidate=data["doppler_candidate"],
+                    model_params=data["model_params"],
+                    continuum=data["continuum"],
+                    flux_error=data["flux_error"]
+                )
+                
+                # Initialize ion dictionary if needed
+                if emission_line.ion not in self.line_list:
+                    self.line_list[emission_line.ion] = {}
+                    
+                # Add to line list using first wavelength as key
+                self.line_list[emission_line.ion][emission_line.group_lam[0]] = emission_line
+
+            # Load doppler shift
+            with open(self.spectrum.doppler_dir, 'r') as f:
+                doppler_value = float(f.readlines()[-1].split('±')[0].strip())
+                self.spectrum.doppler_shift = doppler_value * u.km/u.s
+
+        except FileNotFoundError:
+            raise FileNotFoundError(
+                f"Could not find saved data files. Please run with fresh_start=True first."
+            )
+        except json.JSONDecodeError:
+            raise ValueError(f"Invalid JSON format in {self.spectrum.emission_lines_dir}")
+
     def emission_line_to_dict(self, line_obj):
         """
-
+            Converts an EmissionLine object to a dictionary for serialization.
+            Arguments:
+                line_obj (EmissionLine): Emission line object to convert
+            Returns:
+                dict: Dictionary representation of the emission line
         """
         return {
             "ion": line_obj.ion,
@@ -240,20 +337,24 @@ class EmissionLines(object):
     # EmissionLine Inner Class
     # ------------------------------
     class EmissionLine:
+        """
+            Inner class representing a single emission line or group of blended lines.
+            Attributes:
+                ion (str): The ion name
+                group_lam (list): List of wavelengths in the group
+                obs_lam (float): Observed wavelength
+                noise_bool (bool): Whether the line is noise
+                blended_bool (bool): Whether the line is blended
+                doppler_candidate (bool): Whether the line is a Doppler shift candidate
+                model_params (dict): Model parameters for fitting
+                continuum (float): Continuum value
+                flux_error (tuple): Flux and error values
+        """
         def __init__(self, ion, group_lam, obs_lam, noise_bool, blended_bool, doppler_candidate, model_params, continuum, flux_error):
             """
-            Initialize the EmissionLine class.
-
-            Parameters:
-                ion (str): The ion name.
-                group_lam (list): List of wavelengths in the group.
-                obs_lam (float): Observed wavelength.
-                noise_bool (bool): Whether the line is noise.
-                blended_bool (bool): Whether the line is blended.
-                doppler_candidate: Doppler shift candidate.
-                model_params: Model parameters for fitting.
-                continuum (float): Continuum value.
-                flux_error (tuple): Flux and error values.
+                Initialize the EmissionLine class.
+                Arguments:
+                    (look above)
             """
             self.ion = ion
             self.group_lam = group_lam

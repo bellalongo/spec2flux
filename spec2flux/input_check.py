@@ -1,9 +1,42 @@
 from os.path import exists
 
-
+# ------------------------------
+# InputCheck Class
+# ------------------------------
 class InputCheck(object):
-    def __init__(self, spectrum_config, analysis_config):
+    """
+        This class validates all configuration parameters to ensure they are properly
+        formatted and contain valid values before proceeding with spectrum analysis.
+        Attributes:
+            spectrum_dir (str): Path to the spectrum FITS file
+            rest_dir (str): Path to the emission line REST file
+            airglow_dir (str): Path to the airglow CSV file
 
+            observation (str): Observation type (must be 'SCI')
+            telescope (str): Telescope used (must be 'HST')
+            instrument (str): Instrument used (must be 'STIS' or 'COS')
+            grating (str): Grating type (must contain 'L' or 'M')
+            resolution (str): Resolution level (must be 'HIGH' or 'LOW')
+            star_name (str): Name of the target star
+            min_wavelength (float): Minimum wavelength for analysis
+            max_wavelength (float): Maximum wavelength for analysis
+
+            apply_smoothing (bool): Whether to apply Gaussian smoothing
+            line_fit_model (str): Model for fitting emission lines (must be 'Voigt' or 'Gaussian')
+            cont_fit (str): Continuum fitting method (must be 'Complete' or 'Individual')
+            fresh_start (bool): Whether to start a new analysis or continue from saved data
+    """
+    def __init__(self, spectrum_config, analysis_config):
+        """
+            Initializes all values from the configuration files and validates them.
+            Arguments: 
+                spectrum_config (dict): Dictionary containing spectrum configuration values
+                analysis_config (dict): Dictionary containing analysis configuration values
+            Raises:
+                TypeError: If any parameter has an incorrect data type
+                FileNotFoundError: If any specified file does not exist
+                ValueError: If any parameter has an invalid value
+        """
         # Extract from configs
         self.spectrum_dir = spectrum_config['spectrum_dir']
         self.rest_dir = spectrum_config['rest_dir']
@@ -37,14 +70,14 @@ class InputCheck(object):
         # Check model
         self.check_model()
 
-
     def check_files(self):
         """
-            Checks if files exist and if are of correct variable type
-            Parameters: 
-                        None
+            Checks if required files exist and are of the correct variable type.
+            Raises:
+                TypeError: If any file path is not a string
+                FileNotFoundError: If any specified file does not exist
             Returns:
-                        None
+                None
         """
         # Check types
         if not isinstance(self.spectrum_dir, str):
@@ -66,14 +99,14 @@ class InputCheck(object):
         if not exists(self.airglow_dir):
             raise FileNotFoundError(f"The file for rest_dir: {self.airglow_dir} does not exist")
         
-    
     def check_spectrum_data(self):
         """
-            Checks if spectrum data inputs are of correct variable types and value
-            Parameters: 
-                        None
+            Checks if spectrum data inputs are of correct variable types and values.
+            Raises:
+                TypeError: If any parameter has an incorrect data type
+                ValueError: If any parameter has an invalid value
             Returns:
-                        None
+                None
         """
         # Check types
         if not isinstance(self.observation, str):
@@ -117,15 +150,14 @@ class InputCheck(object):
         
         if self.resolution != 'HIGH' and self.resolution != 'LOW':
             raise ValueError(f"Resolution {self.resolution} is not compatible")
-        
     
     def check_booleans(self):
         """
-            Checks if input booleans are of type bool
-            Parameters: 
-                        None
+            Checks if input booleans are of type bool.
+            Raises:
+                TypeError: If any boolean parameter is not of type bool 
             Returns:
-                        None
+                None
         """
         # Check types
         if not isinstance(self.apply_smoothing, bool):
@@ -134,14 +166,15 @@ class InputCheck(object):
         if not isinstance(self.fresh_start, bool):
             raise TypeError(f"Variable fresh_start must be of type 'bool'")
         
-
     def check_continuum(self):
         """
-            Checks if the specified continuum fit is of correct type and value
-            Parameters:
-                        None
+            Checks if the specified continuum fit is of correct type and value.
+            Raises:
+                TypeError: If the continuum fit parameter is not a string
+                ValueError: If the continuum fit parameter is not an allowed value
+                    
             Returns:
-                        None
+                None
         """
         # Check types
         if not isinstance(self.cont_fit, str):
@@ -151,14 +184,14 @@ class InputCheck(object):
         if self.cont_fit != 'Complete' and self.cont_fit != 'Individual':
             raise ValueError(f"Continuum fit {self.cont_fit} is not compatible")
 
-
     def check_model(self):
         """
-            Checks if model fit variable is of correct type and value
-            Parameters: 
-                        None
+            Checks if the model fit variable is of correct type and value.
+            Raises:
+                TypeError: If the model parameter is not a string
+                ValueError: If the model parameter is not an allowed value   
             Returns:
-                        None
+                None
         """
         # Check type
         if not isinstance(self.line_fit_model, str):

@@ -15,66 +15,102 @@ UPPER_LIMIT_FACTOR = 3  # Factor for calculating upper limit from error
 # ------------------------------
 class FluxCalculator:
     """
-
+        This class calculates fluxes for emission lines in a spectrum.
+        It handles both modeled lines and unmodeled lines, applies continuum subtraction,
+        and provides methods to save results in various formats.
+        Attributes:
+            spectrum (SpectrumData): The spectrum data object
+            emission_lines (EmissionLines): Object containing emission line data
+            plotter (Plotter): Object for plotting visualization
+            model_fitter (ModelFitter): Object for model fitting
     """
     
-    def __init__(self, spectrum, emission_lines, plotter):
+    def __init__(self, spectrum, emission_lines):
         """
-
+            Initializes the FluxCalculator with spectrum and emission line data.
+            Arguments:
+                spectrum (SpectrumData): The spectrum data object
+                emission_lines (EmissionLines): Object containing emission line data
+                plotter (Plotter): Object for plotting visualization
         """
-        self._spectrum = spectrum
-        self._emission_lines = emission_lines
-        self._plotter = plotter
-        self._model_fitter = ModelFitter(spectrum)
+        self.spectrum = spectrum
+        self.emission_lines = emission_lines
+        self.model_fitter = ModelFitter(spectrum)
 
     # ------------------------------
     # Private Helper Functions
     # ------------------------------
     def _calculate_continuum(self, line, wavelength_data, flux_data):
         """
-
+            Calculates the continuum level for a specific emission line.
+            Arguments:
+                line (EmissionLine): The emission line object
+                wavelength_data (ndarray): Array of wavelength values
+                flux_data (ndarray): Array of flux values
+            Returns:
+                list: Array of continuum values matching the input wavelength array length
         """
-        if self._spectrum.cont_fit == 'Complete':
-            continuum = [self._spectrum.spectrum_continuum] * len(wavelength_data)
+        # Check if fitting the entire spectrum as the continuum
+        if self.spectrum.cont_fit == 'Complete':
+            continuum = [self.spectrum.spectrum_continuum] * len(wavelength_data)
+
+        # Individual continuum
         else:
+            # Check if there was a successful fit
             if line.model_params:
-                model_profile = self._model_fitter.create_model_profile(line.model_params)
+                # Use fit min as continuum
+                model_profile = self.model_fitter.create_model_profile(line.model_params)
                 continuum = [min(model_profile(wavelength_data))] * len(wavelength_data)
             else:
-                continuum = self._emission_lines._create_trendline(wavelength_data, flux_data)
+                # Use trendline as continuum
+                continuum = self.emission_lines._create_trendline(wavelength_data, flux_data)
 
         line.continuum = continuum[0]
+
         return continuum
 
     def _calculate_wavelength_edges(self, group_wavelength_data):
         """
-
+            Calculates the wavelength bin edges for numerical integration.
+            Arguments:
+                group_wavelength_data (ndarray): Array of wavelength values
+            Returns:
+                tuple: (w0, w1) Arrays of lower and upper wavelength bin edges
         """
+        # Calculate difference between each wavelength point
         diff = np.diff(group_wavelength_data)
+
+        # Make a boxes correlating to these edges 
         diff0 = np.concatenate((np.array([diff[0]]), diff))
         diff1 = np.concatenate((diff, np.array([diff[-1]])))
+
         w0 = group_wavelength_data - diff0/2.
         w1 = group_wavelength_data + diff1/2.
+        
         return w0, w1
 
     def _calculate_single_flux(self, emission_line):
         """
-
+            Calculates the flux for a single emission line or line group.
+            Arguments:
+                emission_line (EmissionLine): The emission line object
+            Returns:
+                tuple: (flux, error) The calculated flux and its associated error
         """
         # Create mask for the line
         group_mask = (
-            (self._spectrum.wavelength_data > emission_line.group_lam[0] - self._spectrum.line_width) &
-            (self._spectrum.wavelength_data < emission_line.group_lam[-1] + self._spectrum.line_width)
+            (self.spectrum.wavelength_data > emission_line.group_lam[0] - self.spectrum.line_width) &
+            (self.spectrum.wavelength_data < emission_line.group_lam[-1] + self.spectrum.line_width)
         )
         
         # Get masked data
-        wavelength_data = self._spectrum.wavelength_data[group_mask]
-        flux_data = self._spectrum.flux_data[group_mask]
-        error_data = self._spectrum.error_data[group_mask]
+        wavelength_data = self.spectrum.wavelength_data[group_mask]
+        flux_data = self.spectrum.flux_data[group_mask]
+        error_data = self.spectrum.error_data[group_mask]
 
         # Update line information based on existing doppler shift
         rest_lam = emission_line.group_lam[-1] * u.AA
-        emission_line.obs_lam = self._spectrum.doppler_shift.to(
+        emission_line.obs_lam = self.spectrum.doppler_shift.to(
             u.AA, equivalencies=u.doppler_optical(rest_lam)).value
 
         # Calculate continuum and edges
@@ -83,7 +119,7 @@ class FluxCalculator:
         
         # Calculate flux components
         if emission_line.model_params:
-            model_profile = self._model_fitter.create_model_profile(emission_line.model_params)
+            model_profile = self.model_fitter.create_model_profile(emission_line.model_params)
             total_sumflux = np.sum((model_profile(wavelength_data))*(w1 - w0))
         else:
             total_sumflux = np.sum(flux_data*(w1-w0))
@@ -99,21 +135,29 @@ class FluxCalculator:
 
     def _save_flux_results(self, line_dicts):
         """
-
+            Saves emission line data to a JSON file.
+            Arguments:
+                line_dicts (list): List of emission line dictionaries
+            Returns:
+                None
         """
-        with open(self._spectrum.emission_lines_dir, "w") as json_file:
+        with open(self.spectrum.emission_lines_dir, "w") as json_file:
             json.dump(line_dicts, json_file, indent=4)
 
     def _delete_existing_files(self):
         """
-
+            Deletes existing output files to ensure clean results.
+            Arguments:
+                None
+            Returns:
+                None
         """
         files_to_delete = [
-            self._spectrum.emission_lines_dir,
-            self._spectrum.fits_dir,
-            self._spectrum.ecsv_dir,
-            self._spectrum.csv_dir,
-            self._spectrum.final_plot_dir
+            self.spectrum.emission_lines_dir,
+            self.spectrum.fits_dir,
+            self.spectrum.ecsv_dir,
+            self.spectrum.csv_dir,
+            self.spectrum.final_plot_dir
         ]
         
         for file_path in files_to_delete:
@@ -128,15 +172,24 @@ class FluxCalculator:
     # ------------------------------
     def process_spectrum(self):
         """
-            
+            Processes the spectrum by calculating fluxes for all emission lines and saving results.
+            Arguments:
+                None
+            Returns:
+                None
         """
         line_dicts = []
 
-        for ion in self._emission_lines.line_list:
-            for emission_line in self._emission_lines.line_list[ion].values():
+        # Iterate through each emission line group
+        for ion in self.emission_lines.line_list:
+            for emission_line in self.emission_lines.line_list[ion].values():
+                # Grab flux and error
                 flux, error = self._calculate_single_flux(emission_line)
                 emission_line.flux_error = (flux, error)
-                line_dicts.append(self._emission_lines.emission_line_to_dict(emission_line))
 
+                # Append emission line to line_dicts
+                line_dicts.append(self.emission_lines.emission_line_to_dict(emission_line))
+
+        # Save emission line information
         self._save_flux_results(line_dicts)
-        self._spectrum.save_data(self._emission_lines)
+        self.spectrum.save_data(self.emission_lines)

@@ -10,9 +10,26 @@ from .model_fitter import ModelFitter
 # Plotter Class
 # ------------------------------
 class Plotter:
+    """
+        This class handles visualization of spectra and emission lines, 
+        including interactive plotting for user selection of emission lines for
+        Doppler calculations and noise detection.
+        Attributes:
+            spectrum (SpectrumData): The spectrum data object containing wavelength and flux data
+            emission_lines (EmissionLines): Object containing emission line data
+            model_fitter (ModelFitter): Object for fitting models to emission lines
+
+            selected_lines (dict): Dictionary tracking user-selected emission lines
+            fig (Figure): Matplotlib figure object for the current plot
+            ax (Axes): Matplotlib axes object for the current plot
+            done_button (Button): Button widget for completing the selection process
+    """
     def __init__(self, spectrum, emission_lines):
         """
-            
+            Initializes the Plotter object with spectrum and emission line data.
+            Arguments:
+                spectrum (SpectrumData): The spectrum data object
+                emission_lines (EmissionLines): Object containing emission line data       
         """
         self.spectrum = spectrum
         self.emission_lines = emission_lines
@@ -31,7 +48,14 @@ class Plotter:
     # ------------------------------
     def _setup_figure(self, title, xlabel, ylabel, instructions):
         """
-
+            Sets up the figure and axes for plotting with appropriate styling and labels.
+            Arguments:
+                title (str): Title for the plot
+                xlabel (str): Label for the x-axis
+                ylabel (str): Label for the y-axis
+                instructions (str): Instructions to display above the plot, or None
+            Returns:
+                tuple: (fig, ax) Matplotlib figure and axes objects
         """
         sns.set_style("whitegrid")
         self.fig, self.ax = plt.subplots(figsize=(15, 8))
@@ -61,12 +85,16 @@ class Plotter:
                 
             self.fig.suptitle(subtitle, fontsize=12, y=0.97)
 
-        
         return self.fig, self.ax
 
     def _setup_interactions(self, fig):
         """
-
+            Sets up interactive elements for the plot, including the Done button
+            and event handlers.
+            Arguments:
+                fig (Figure): Matplotlib figure to add interactions to
+            Returns:
+                None
         """
         # Add Done button
         ax_done = plt.axes([0.81, 0.01, 0.1, 0.04])
@@ -78,7 +106,11 @@ class Plotter:
 
     def _on_done(self, event):
         """
-
+            Callback function for the Done button. Prints selected lines and closes the figure.
+            Arguments:
+                event: The button click event
+            Returns:
+                None
         """
         print("\nSelected lines:")
         for wavelength, data in self.selected_lines.items():
@@ -88,7 +120,11 @@ class Plotter:
 
     def _plot_spectrum(self, ax):
         """
-
+            Plots the basic spectrum data on the given axes.
+            Arguments:
+                ax (Axes): Matplotlib axes to plot on
+            Returns:
+                None
         """
         ax.plot(self.spectrum.wavelength_data, self.spectrum.flux_data,
                 linewidth=1, color='gray', alpha=0.7)
@@ -96,7 +132,11 @@ class Plotter:
 
     def _plot_doppler_data(self, ax):
         """
-
+            Plots emission lines for Doppler shift calculation with interactive elements.
+            Arguments:
+                ax (Axes): Matplotlib axes to plot on
+            Returns:
+                None
         """
         # Iterate through each ion in the line list
         for ion in self.emission_lines.line_list:
@@ -178,7 +218,11 @@ class Plotter:
 
     def _plot_noise_data(self, ax):
         """
-
+            Plots emission lines for noise detection with interactive elements.
+            Arguments:
+                ax (Axes): Matplotlib axes to plot on
+            Returns:
+                None
         """
         # Iterate through each ion in the line list
         for ion in self.emission_lines.line_list:
@@ -202,12 +246,12 @@ class Plotter:
                         continuum = [min(model_profile(wavelength_data))] * len(wavelength_data)
                     else:
                         continuum = self.emission_lines._create_trendline(wavelength_data, flux_data)
-                    
-                # Plot continuum
-                continuum, = ax.plot(wavelength_data, continuum, color="#416788", lw=2, alpha=0.8)
 
                 # Make sure not a doppler candidate
                 if not emission_line.doppler_candidate:
+                    # Plot continuum
+                    continuum, = ax.plot(wavelength_data, continuum, color="#416788", lw=2, alpha=0.8)
+
                     # If there are model parameters, create and plot the model
                     if emission_line.model_params:
                         # Create the model using the saved parameters
@@ -258,7 +302,14 @@ class Plotter:
 
     def _interactive_plot(self, title, xlabel, ylabel, instructions):
         """
-
+            Creates an interactive plot with appropriate labels and setup.
+            Arguments:
+                title (str): Title for the plot
+                xlabel (str): Label for the x-axis
+                ylabel (str): Label for the y-axis
+                instructions (str): Instructions to display above the plot
+            Returns:
+                tuple: (fig, ax) Matplotlib figure and axes objects
         """
         # Setup the plot
         self.fig, self.ax = self._setup_figure(title, xlabel, ylabel, instructions)
@@ -273,7 +324,11 @@ class Plotter:
 
     def _on_pick(self, event):
         """
-
+            Callback function for line picking events. Toggles selection state of emission lines.
+            Arguments:
+                event: The picker event
+            Returns:
+                None
         """
         thisline = event.artist
         
@@ -316,7 +371,12 @@ class Plotter:
 
     def _plot_emission_line_components(self, ax, emission_line):
         """
-            
+            Plots individual components of an emission line for the final plot.
+            Arguments:
+                ax (Axes): Matplotlib axes to plot on
+                emission_line (EmissionLine): Emission line object to plot
+            Returns:
+                list: List of legend elements
         """
         legend_items = []
         
@@ -369,9 +429,13 @@ class Plotter:
     # ------------------------------
     # Public Methods
     # ------------------------------
-    def doppler_plots(self, fitted_models):
+    def doppler_plots(self):
         """
-
+            Creates an interactive plot for selecting emission lines for Doppler shift calculation.
+            Arguments:
+                None
+            Returns:
+                None
         """
         # Initialize selected lines to be empty
         self.selected_lines = {}
@@ -386,12 +450,15 @@ class Plotter:
         
         # Add models and interactive lines
         self._plot_doppler_data(ax)
-        
         plt.show()
 
     def noise_plots(self):
         """
-
+            Creates an interactive plot for selecting which emission lines are noise.
+            Arguments:
+                None
+            Returns:
+                None
         """
         # Initialize selected lines to be empty
         self.selected_lines = {}
@@ -409,10 +476,13 @@ class Plotter:
         
         plt.show()
 
-
     def get_selected_lines(self):
         """
-
+            Returns a dictionary of selected emission lines.
+            Arguments:
+                None
+            Returns:
+                dict: Dictionary of selected lines mapped to their ion names
         """
         return {wavelength: self.selected_lines[wavelength]['ion'] 
                 for wavelength in self.selected_lines 
@@ -420,28 +490,23 @@ class Plotter:
     
     def create_final_plot(self):
         """
-        
+        Creates the final plot showing all emission lines with their models, continuum,
+            and wavelength markers. Saves the plot to a file and displays it.
+        Arguments:
+            None
+        Returns:
+            None
         """
         # Setup the plot basics
-        fig, ax = self._setup_figure(
+        _, ax = self._setup_figure(
             title=f"Flux vs Wavelength for {self.spectrum.star_name}",
             xlabel='Wavelength (Å)',
             ylabel='Flux (erg s$^{-1}$ cm$^{-2}$ Å$^{-1}$)',
             instructions=None  # No instructions needed for final plot
         )
 
-        # Calculate plot bounds
-        wavelength_mask = (self.spectrum.wavelength_data > 1250) & (
-            self.spectrum.wavelength_data < self.spectrum.max_wavelength)
-        max_peak = max(self.spectrum.flux_data[wavelength_mask])
-        min_peak = min(self.spectrum.flux_data)
-
         # Plot base spectrum
         self._plot_spectrum(ax)
-        
-        # # Set axis limits
-        # ax.set_ylim(min_peak, max_peak * 1.5)
-        # ax.set_xlim(self.spectrum.min_wavelength, self.spectrum.max_wavelength)
 
         # Initialize legend elements
         legend_elements = []

@@ -2,7 +2,7 @@
 
 
 ## About spec2flux
-Spec2flux (Spectrum to Flux) aims to accurately calculate the emission line flux of lines in the Far Ultraviolet (FUV) range. This range contains information that can help clue in on exoplanetary atmospheres with the measurements providing insight into FUV radiation from host stars. Integrating UV spectra with X-ray data allows us to estimate the stellar corona, adding to the toolkit of exoplanet atmosphere data. 
+Spec2flux (Spectrum to Flux) aims to accurately calculate the emission line flux of lines in the Far Ultraviolet (FUV) range. This range contains information that can help clue in on exoplanetary atmospheres, with the measurements providing insight into FUV radiation from host stars. Integrating UV spectra with X-ray data allows us to estimate the stellar corona, adding to the toolkit of exoplanet atmosphere data. 
 
 
 ## How it works
@@ -31,22 +31,107 @@ The script accomplishes the task of calculating flux by:
    ```sh
       pip install spec2flux
    ```
-
    
-2. **Create a `main.py`, which will used to put the package attributes.**
+2. **Create a `main.py`, which will be utilized to perform the calculations using the spec2flux toolkit.**
+   ```python
+      import spec2flux
+            
+      def main():
+          # Check inputs
+          spec2flux.InputCheck(SPECTRUM_CONFIG, ANALYSIS_CONFIG)
+      
+          # Load spectrum data and emission lines
+          spectrum = spec2flux.SpectrumData(SPECTRUM_CONFIG, ANALYSIS_CONFIG)
+          emission_lines = spec2flux.EmissionLines(spectrum)
+      
+          if ANALYSIS_CONFIG['fresh_start']:
+              # Initialize plotter
+              plotter = spec2flux.Plotter(spectrum, emission_lines)
+      
+              # Calculate doppler shift
+              plotter.doppler_plots()
+              emission_lines.update_selected_lines(plotter, 'Doppler')
+      
+              doppler_calculator = spec2flux.DopplerCalculator(spectrum)
+              spectrum.doppler_shift = doppler_calculator.calculate_doppler_shift(emission_lines)
+      
+              # Handle noise detection
+              plotter.noise_plots()
+              emission_lines.update_selected_lines(plotter, 'Noise')
+      
+              # Calculate fluxes
+              flux_calculator = spec2flux.FluxCalculator(spectrum, emission_lines)
+              flux_calculator.process_spectrum()
+      
+          else:
+              # Load existing data
+              emission_lines.load_saved_data()
+              
+          # Final plot
+          plotter = spec2flux.Plotter(spectrum, emission_lines)
+          plotter.create_final_plot()
+      
+      if __name__ == '__main__':
+          main()
+   ```
 
+3. **Create a `config.py`, which contains two main configuration dictionaries that control the behavior of spec2flux.**
+   ``` python
+   """
+       Configuration settings for spectrum details and preferences
    
-3. **Ensure your files for the DEM lines, airglow, and the spectrum which will used to calculate the flux are in your directory.**
+           spectrum_dir: Path to spectrum FITS file
+           rest_dir: Path to emission line REST file
+           airglow_dir: Path to airglow CSV file
+           observation: Observation type ('sci' only)
+           telescope: Telescope used ('hst' only)
+           instrument: Instrument used ('stis' or 'cos')
+           grating: Grating type
+           resolution: High or low resolution ('high' or 'low')
+           star_name: Name of target star
+           min/max_wavelength: Wavelength range to analyze
+      """
+      SPECTRUM_CONFIG = {
+          'spectrum_dir': 'hlsp_muscles_hst_stis_tau_ceti_e140m_v1_component-spec.fits',
+          'rest_dir': 'DEM_goodlinelist.csv',
+          'airglow_dir': 'airglow.csv',
+          'observation': 'sci',
+          'telescope': 'hst',
+          'instrument': 'stis',
+          'grating': 'e140m',
+          'resolution': 'high',
+          'star_name': 'TESTING',
+          'min_wavelength': 1160,
+          'max_wavelength': 1700
+      }
+      
+      """
+          Configuration settings for emission line fitting and analysis    
+      
+              apply_smoothing: Apply gaussian smoothing
+              line_fit_model: Fitting model ('Voigt' or 'Gaussian')
+              cont_fit: Continuum fitting method ('Complete' or 'Individual')
+              fresh_start: True for first run or to regenerate plots
+      """
+      ANALYSIS_CONFIG = {
+          'apply_smoothing': False,
+          'line_fit_model': 'Voigt',
+          'cont_fit': 'Individual',
+          'fresh_start': True
+      }
+   ```
+
+4. **Ensure your files for the DEM lines, airglow, and the spectrum, which will used to calculate the flux, are in your directory.**
    ```bash
       project-directory/
       ├── main.py
+      ├── config.py
       ├── DEM_goodlinelist.csv
       ├── airglow.csv
       ├── spectrum.fits
       ```
 
-   
-4. **Make your `main.py` resemble the following:**
+5. **Make your `main.py` resemble the following:**
    ```python
       import spec2flux
       
@@ -91,13 +176,17 @@ The script accomplishes the task of calculating flux by:
    ```
 
    
-5. **Run `main.py`.**
+6. **Run `main.py`.**
    ```sh
       python main.py
    ```
 
+7. **Select "best" doppler shift candidates.** </br>
+A plot of the complete spectrum will appear, with orange lines representing possible candidates for doppler shift.
+ 
+
    
-6. **Select "best" doppler shift candidates.** </br>
+7. **Select "best" doppler shift candidates.** </br>
    A series of plots will appear, click 'y' if the plot is an eligible candidate for doppler shift, 'n' if it is not.
    
    <div align="center">
@@ -106,7 +195,7 @@ The script accomplishes the task of calculating flux by:
    </div>
 
 
-7. **After iterating through all the doppler shift candidates, plots will appear for the noise selection portion.** </br>
+8. **After iterating through all the doppler shift candidates, plots will appear for the noise selection portion.** </br>
    To select if the current plot is noise or not, click 'y' if the plot is noise and 'n' if the plot is not noise.
 
    <table>
@@ -122,7 +211,7 @@ The script accomplishes the task of calculating flux by:
      </tr>
    </table>
 
-8. **After all emission lines are iterated through, a final plot will appear**
+9. **After all emission lines are iterated through, a final plot will appear**
 
    <div align="center">
        <img src="https://github.com/bellalongo/spec2flux/blob/main/readme_pics/final_plot.png?raw=true" alt="Final plot example" width="600">
@@ -136,7 +225,7 @@ The script accomplishes the task of calculating flux by:
    </div>
    </br>
 
-9. **After running the script, your directory will now look like the following:**
+10. **After running the script, your directory will now look like the following:**
       ```bash
       project-directory/
       ├── main.py

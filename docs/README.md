@@ -1,95 +1,119 @@
-1. Clone the repository </br>
+# spec2flux - Developer Guide
 
+This README provides instructions for running the code directly from the cloned repository.
+
+## Getting Started
+
+1. Clone the repository
    ```sh
    git clone https://github.com/bellalongo/spec2flux.git
    ```
-2. Navigate to docs/tutorial.py and adjust spectrum specs, making sure the spectrum is in the docs directory.
-3. Adjust the 'fresh_start' parameter depending on whether you want to adjust calculations on a new run </br>
-   (if first run, set to True)
+
+2. Navigate to the docs directory
    ```sh
-   fresh_start = True
+   cd spec2flux/docs
    ```
-3. Adjust the 'gaussian_smoothing' parameter depending on whether you to smooth the spectrum </br>
-   (if first run, set to False)
+
+3. Ensure your spectrum file is available in the docs directory
+
+4. Open `tutorial.py` and adjust configuration settings:
+   - Update the SPECTRUM_CONFIG dictionary with your spectrum details
+   - Set analysis parameters in ANALYSIS_CONFIG
+
+5. Set the appropriate run parameters:
+   ```python
+   # Set to True for first run or if you want to regenerate all outputs
+   # Set to False to use previously saved data
+   'fresh_start': True
+   
+   # Set to True if you want to apply Gaussian smoothing to the spectrum
+   # Generally recommended to leave as False for first analysis
+   'apply_smoothing': False
+   ```
+
+6. Run the script:
    ```sh
-   gaussian_smoothing = False
-   ```
-5. Run the script:
-    ```sh
    python tutorial.py
    ```
 
-## Adjustments
-The script can be run on its own without any adjustments, but if the star is a little finicky:
-### tutorial.py
-* adjust the mask used to isolate emission lines
-* edit header if want different header information
-### emission_lines.py
-* adjust peak_width in 'peak_width_finder'
-* adjust tolerance used to group emission lines in 'grouping_emission_lines'
-* adjust voigt fit initial parameters
-  
+## Adjustments for Troubleshooting
 
+If you're having issues getting good line measurements, you can adjust several parameters in the code:
 
-## Doppler shift calculation
-A plot will appear of the 'best' emission lines, with a Voigt fit fitted to it. Click 'y' if you think the line should be used to calculate Doppler shift (these lines will automatically not be considered as noise), and 'n' if the emission line if not. </br>
+### In tutorial.py
+* **Wavelength range**: Adjust `min_wavelength` and `max_wavelength` values if your emission lines are being cut off
+  ```python
+  'min_wavelength': 1160,  # Minimum wavelength to analyze
+  'max_wavelength': 1700   # Maximum wavelength to analyze
+  ```
 
-![doppler calculation example](https://github.com/bellalongo/spec2flux/blob/main/readme_pics/doppler_calc.png?raw=true)
-</br>
+* **Line fit model**: Switch between 'Voigt' and 'Gaussian' to see which works better for your data
+  ```python
+  'line_fit_model': 'Voigt',  # Try 'Gaussian' if Voigt profiles aren't fitting well
+  ```
 
-## Determining if noise
-All lines not selected for Doppler calculation will appear, some with a Voigt profile fitted if possible to be selected as noise or not noise. Click 'y' if you think the line is noise, and 'n' if the line is not noise. </br>
+* **Continuum fitting**: Change between 'Complete' and 'Individual' methods
+  ```python
+  'cont_fit': 'Individual',  # Try 'Complete' for challenging spectra
+  ```
 
-**Not noise:**
-![Not noise example](https://github.com/bellalongo/spec2flux/blob/main/readme_pics/not_noise.png?raw=true)
-</br>
+### In emission_lines.py
+* **Tolerance**: Adjust the grouping tolerance for emission lines
+  ```python
+  # Near the top of the file:
+  TOLERANCE = 6  # Tolerance for grouping emission lines (in Angstroms)
+  ```
 
-**Noise:**
-![Not noise example](https://github.com/bellalongo/spec2flux/blob/main/readme_pics/noise.png?raw=true)
+* **Peak width finder**: In the `peak_width_finder` method, you can adjust the width used to isolate emission lines
+  ```python
+  # Increase for broader lines, decrease for narrower lines
+  peak_width = PEAK_WIDTH_LOW_RES if self.resolution == 'LOW' else PEAK_WIDTH_HIGH_RES
+  ```
 
-## Final plot
-After all emission line selections and calculations have been made, a final plot will appear showing the spectrum and each labeled emission line. Matplotlib gives the ability to zoom into the plot, so please do so to double-check the lines. This plot is saved to the 'plots' folder. </br>
+* **Voigt fit parameters**: Adjust initial parameters for better fits
+  ```python
+  # In _create_voigt_profile method:
+  init_amp = np.max(self.spectrum.flux_data[line_mask])
+  init_fwhm_g = self.spectrum.line_width/5  # Try adjusting this divisor
+  init_fwhm_l = self.spectrum.line_width/5  # Try adjusting this divisor
+  ```
 
-![final plot example](https://github.com/bellalongo/spec2flux/blob/main/readme_pics/final_plot.png?raw=true)
-</br>
+### In spectrum_data.py
+* **Peak widths**: Modify the constants for high and low resolution spectra
+  ```python
+  # Near the top of the file:
+  PEAK_WIDTH_LOW_RES = 5.0  # Angstroms
+  PEAK_WIDTH_HIGH_RES = 0.5  # Angstroms
+  ```
 
-**Zoomed in:**
-![zoom example](https://github.com/bellalongo/spec2flux/blob/main/readme_pics/zoom.png?raw=true)
+* **Smoothing**: Adjust the smoothing sigma if using gaussian smoothing
+  ```python
+  # In smooth_data method, adjust the sigma parameter:
+  def smooth_data(self, sigma):
+      # Default is sigma=1, try values between 0.5-2 for different smoothing levels
+  ```
 
-</br>
+### In flux_calculator.py
+* **Upper limit factor**: Change the factor used for calculating upper limits from errors
+  ```python
+  # Near the top of the file:
+  UPPER_LIMIT_FACTOR = 3  # Factor for calculating upper limit from error
+  ```
 
-## Using the data:
-Header contains:
-* DATE: date flux was calculated
-* FILENAME: name of the fits file used to for flux calc
-* TELESCP: telescope used to measure spectrum
-* INSTRMNT: active instrument to measure spectrum
-* GRATING: grating used to measure spectrum
-* TARGNAME: name of star used in measurement
-* DOPPLER: doppler shift used to measure flux
-* WIDTH: average peak width of the emissoin lines
-* RANGE: flux range used to isolate emission line
-* WIDTHPXL: average emission line peak width in pixels
-* UPPRLIMIT: upper limit used for noise
+## Output Directory Structure
 
+After running the analysis, the following directories will be created:
 
-### Using the data:
-ECSV Data: File columns are Ion, Rest Wavelength, Flux, Error, Blended Line, each row representing a grouped emission line.  <br />
-FITS Data: FITS Table containing the same data as the ECSV file. <br />
-Note: Noise is marked as having the negative of the upper limit (3*error) as the flux and an error of 0. <br />
-
-
-
-
-[astropy-url]: https://astropy.org/
-[astropy-pic]: https://img.shields.io/badge/astropy-red?style=for-the-badge
-[matplotlib-url]: https://matplotlib.org/stable/index.html
-[matplotlib-pic]: https://img.shields.io/badge/matplotlib-orange?style=for-the-badge
-[scipy-url]: https://scipy.org/
-[scipy-pic]: https://img.shields.io/badge/scipy-yellow?style=for-the-badge
-[seaborn-url]: https://seaborn.pydata.org/
-[seaborn-pic]: https://img.shields.io/badge/seaborn-green?style=for-the-badge
-[numpy-url]: https://numpy.org/doc/
-[numpy-pic]: https://img.shields.io/badge/numpy-blue?style=for-the-badge
-[pandas-url]: https://pandas.pydata.org/docs/
-[pandas-pic]: https://img.shields.io/badge/pandas-purple?style=for-the-badge
+```
+docs/
+├── doppler/                         # Doppler shift calculations
+│   └── star_name_doppler.txt
+├── emission_lines/                  # Emission line data
+│   └── star_name_lines.json
+├── flux/                            # Flux calculation results
+│   ├── star_name.csv
+│   ├── star_name.ecsv
+│   └── star_name.fits
+└── plots/                           # Generated plots
+    └── star_name_final_plot.png
+```
